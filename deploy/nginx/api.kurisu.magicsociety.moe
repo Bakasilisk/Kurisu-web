@@ -1,0 +1,20 @@
+# Future: expose the bot API cog (cogs/webapi.py in the Kurisu repo) directly,
+# e.g. if kurisu-web ever moves to a different host. Commented out — v1 keeps
+# the bot API on 127.0.0.1:8080, reachable only by kurisu-web on this host.
+#
+# server {
+#     listen 80;
+#     listen [::]:80;
+#     server_name api.kurisu.magicsociety.moe;
+#
+#     location / {
+#         proxy_pass http://127.0.0.1:8080;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# }
+#
+# Run `certbot --nginx -d api.kurisu.magicsociety.moe` afterward for TLS, and
+# firewall the port to only the kurisu-web host's IP.

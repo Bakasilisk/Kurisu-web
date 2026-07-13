@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ guild.name }} — Kurisu Stats{% endblock %}
+{% block content %}
+<h1>{{ guild.name }}</h1>
+
+<section class="cards">
+  <div class="card"><span class="label">Total messages</span><span class="value">{{ "{:,}".format(overview.total_messages) }}</span></div>
+  <div class="card"><span class="label">Total words</span><span class="value">{{ "{:,}".format(overview.total_words) }}</span></div>
+  <div class="card"><span class="label">Active members (30d)</span><span class="value">{{ overview.active_members_30d }}</span></div>
+  <div class="card"><span class="label">Avg/day</span><span class="value">{{ "%.1f"|format(overview.avg_day) }}</span></div>
+  <div class="card"><span class="label">Reactions</span><span class="value">{{ "{:,}".format(overview.reactions) }}</span></div>
+  <div class="card"><span class="label">Voice time</span><span class="value" data-seconds="{{ overview.voice_seconds }}"></span></div>
+  <div class="card"><span class="label">Trend (30d)</span><span class="value">{{ overview.trend.text }}</span></div>
+</section>
+
+<section class="period-selector">
+  <label>Period:
+    <select id="period-select">
+      <option value="week">Week</option>
+      <option value="month" selected>Month</option>
+      <option value="year">Year</option>
+      <option value="all">All</option>
+    </select>
+  </label>
+</section>
+
+<section class="charts">
+  <div class="chart-box"><h2>Top posters</h2><canvas id="chart-top"></canvas></div>
+  <div class="chart-box"><h2>Busiest channels</h2><canvas id="chart-channels"></canvas></div>
+  <div class="chart-box"><h2>Voice leaderboard</h2><canvas id="chart-voice"></canvas></div>
+  <div class="chart-box"><h2>Growth</h2><canvas id="chart-growth"></canvas></div>
+</section>
+
+<section class="activity">
+  <h2>Activity (hour × weekday)</h2>
+  <div id="activity-heatmap"></div>
+</section>
+
+<section class="links">
+  <a href="/guild/{{ guild.id }}/quietest">Quietest members</a>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>initDashboard("{{ guild.id }}");</script>
+{% endblock %}

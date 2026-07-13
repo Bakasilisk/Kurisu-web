@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Quietest — {{ guild.name }}{% endblock %}
+{% block content %}
+<h1>Quietest members — {{ guild.name }}</h1>
+<ol>
+  {% for e in data.entries[:25] %}
+  <li><a href="/guild/{{ guild.id }}/member/{{ e.user.id }}">{{ e.user.name }}</a> — {{ e.count }} messages</li>
+  {% endfor %}
+</ol>
+{% endblock %}

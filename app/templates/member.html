@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.user.name }} — {{ guild.name }}{% endblock %}
+{% block content %}
+<h1>{{ profile.user.name }}</h1>
+{% if profile.user.avatar %}<img src="{{ profile.user.avatar }}" class="avatar" alt="">{% endif %}
+<table class="stat-table">
+  <tr><th>Total messages</th><td>{{ "{:,}".format(profile.total_messages) }}</td></tr>
+  <tr><th>Total words</th><td>{{ "{:,}".format(profile.total_words) }}</td></tr>
+  <tr><th>Active days</th><td>{{ profile.active_days }}</td></tr>
+  <tr><th>Server rank</th><td>{{ ("#" ~ profile.server_rank) if profile.server_rank else "Unranked" }}</td></tr>
+  <tr><th>% of server</th><td>{{ "%.1f"|format(profile.pct_of_server) }}%</td></tr>
+  <tr><th>Words/message</th><td>{{ "%.1f"|format(profile.words_per_msg) }}</td></tr>
+  <tr><th>Busiest hour</th><td>{{ "%02d:00 UTC"|format(profile.busiest_hour) if profile.busiest_hour is not none else "—" }}</td></tr>
+  <tr><th>Voice time</th><td data-seconds="{{ profile.voice_seconds }}"></td></tr>
+  <tr><th>Reactions given/received</th><td>{{ profile.reactions_given }} / {{ profile.reactions_received }}</td></tr>
+</table>
+<h2>Top channels</h2>
+<ul>
+  {% for c in profile.top_channels %}
+  <li>#{{ c.channel.name }} — {{ c.count }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}
+{% block scripts %}<script src="/static/js/dashboard.js"></script><script>formatVoiceSeconds();</script>{% endblock %}

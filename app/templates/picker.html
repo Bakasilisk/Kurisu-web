@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Your servers</h1>
+<ul class="guild-list">
+  {% for g in guilds %}
+  <li><a href="/guild/{{ g.id }}">
+    {% if g.icon %}<img src="{{ g.icon }}" class="guild-icon" alt="">{% endif %}
+    <span>{{ g.name }}</span>
+  </a></li>
+  {% else %}
+  <li>No accessible servers.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
