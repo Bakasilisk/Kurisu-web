@@ -1,3 +1,4 @@
+import logging
 import os
 
 # Simple .env loader, no python-dotenv dependency — mirrors Kurisu bot.py's
@@ -18,7 +19,7 @@ if os.path.exists(".env"):
 from contextlib import asynccontextmanager  # noqa: E402
 
 import httpx  # noqa: E402
-from fastapi import FastAPI, HTTPException, Request  # noqa: E402
+from fastapi import FastAPI, HTTPException, Request, Response  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
@@ -26,6 +27,8 @@ from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
 from app import auth, authz  # noqa: E402
 from app.botapi import BotAPIClient, BotAPIError  # noqa: E402
+
+logger = logging.getLogger("kurisu-web")
 
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8081")
 SESSION_SECRET = os.environ.get("SESSION_SECRET", "")
@@ -91,16 +94,51 @@ async def login(request: Request):
     return RedirectResponse(auth.build_authorize_url(state, _redirect_uri()))
 
 
+def _login_error(request: Request, message: str, status_code: int = 400) -> Response:
+    return templates.TemplateResponse(
+        request, "error.html", {"message": message}, status_code=status_code
+    )
+
+
 @app.get("/auth/callback")
 async def auth_callback(request: Request, code: str | None = None, state: str | None = None):
     expected = request.session.pop("oauth_state", None)
     if not code or not state or state != expected:
-        raise HTTPException(status_code=400, detail="invalid oauth state")
-    token = await auth.exchange_code(code, _redirect_uri())
-    access_token = token["access_token"]
-    user = await auth.fetch_user(access_token)
-    user_guilds = await auth.fetch_user_guilds(access_token)
-    allowed = await authz.accessible_guilds(request.app.state.bot_api, user, user_guilds)
+        # Usually a stale/lost session cookie (e.g. serving over plain HTTP with
+        # https_only cookies, or a bookmarked callback URL) rather than a real error.
+        return _login_error(
+            request,
+            "Your login session expired or was lost before completing. Please try again.",
+        )
+    # The Discord OAuth exchange and the bot-API lookup can each fail for reasons
+    # outside our control (bad client credentials, redirect_uri mismatch, the bot
+    # API being down). Surface a readable reason instead of a bare 500.
+    try:
+        token = await auth.exchange_code(code, _redirect_uri())
+        access_token = token["access_token"]
+        user = await auth.fetch_user(access_token)
+        user_guilds = await auth.fetch_user_guilds(access_token)
+    except httpx.HTTPStatusError as e:
+        logger.warning("Discord OAuth exchange failed: %s", e)
+        return _login_error(
+            request,
+            "Discord rejected the sign-in. This usually means the app's OAuth "
+            "credentials or redirect URL are misconfigured.",
+            status_code=502,
+        )
+    except httpx.HTTPError as e:
+        logger.warning("Could not reach Discord during login: %s", e)
+        return _login_error(request, "Couldn't reach Discord. Please try again.", status_code=502)
+    try:
+        allowed = await authz.accessible_guilds(request.app.state.bot_api, user, user_guilds)
+    except BotAPIError as e:
+        logger.warning("Bot API unavailable during login: %s", e)
+        return _login_error(
+            request,
+            "The bot's data service is unavailable, so your servers couldn't be "
+            "loaded. Please try again shortly.",
+            status_code=502,
+        )
     request.session["user"] = {"id": user["id"], "username": user.get("username"), "avatar": user.get("avatar")}
     request.session["accessible_guild_ids"] = [g["id"] for g in allowed]
     return RedirectResponse("/")
