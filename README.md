@@ -32,8 +32,8 @@ Fill in `.env`:
 - `SESSION_SECRET` — generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
 - `BOT_API_BASE` / `WEBAPI_KEY` — point at the bot's web API cog; `WEBAPI_KEY` must match one of
   the (comma-separated) keys in the bot's own `.env`.
-- `WEB_BIND` — informational (the actual bind host/port is passed to `uvicorn` on the command
-  line — see below and `deploy/kurisu-web.service`).
+- `WEB_BIND` — `host:port` this site binds to (read by `run.py`). Optional `WEB_FORWARDED_ALLOW_IPS`
+  sets which proxy IPs' `X-Forwarded-*` headers are trusted (default `127.0.0.1`).
 
 Session cookies are `Secure` (`https_only=True`), so the login flow requires real TLS — it won't
 work end-to-end over a plain `http://` origin (e.g. local `http://127.0.0.1`) beyond checking that
@@ -42,11 +42,12 @@ pages render and redirects are constructed correctly.
 ## Run
 
 ```bash
-uvicorn app.main:app --host 127.0.0.1 --port 8081
+python run.py
 ```
 
-Or, behind nginx, add `--proxy-headers --forwarded-allow-ips 127.0.0.1` (see the systemd unit
-below).
+`run.py` binds the `host:port` from `WEB_BIND` in `.env` and always enables `--proxy-headers`
+(trusting `WEB_FORWARDED_ALLOW_IPS`, default `127.0.0.1`) for running behind nginx — so the port
+lives only in `.env`, not on the command line. The systemd unit below invokes it the same way.
 
 ## Deployment (nginx + systemd)
 

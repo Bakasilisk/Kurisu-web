@@ -9,7 +9,8 @@ Wants=network-online.target
 Type=simple
 User=youruser
 WorkingDirectory=/path/to/kurisu-web
-ExecStart=/path/to/kurisu-web/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8081 --proxy-headers --forwarded-allow-ips 127.0.0.1
+# Host/port + proxy-header trust come from WEB_BIND / WEB_FORWARDED_ALLOW_IPS in .env (see run.py).
+ExecStart=/path/to/kurisu-web/.venv/bin/python run.py
 Restart=on-failure
 RestartSec=5
 
