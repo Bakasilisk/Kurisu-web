@@ -10,6 +10,11 @@ class BotAPIError(Exception):
     """Raised when the bot API call fails or returns a non-2xx status."""
 
 
+def _params(**kwargs) -> dict:
+    """Query params dict with unset (None) values dropped."""
+    return {k: v for k, v in kwargs.items() if v is not None}
+
+
 class BotAPIClient:
     """Thin wrapper around the bot's read-only HTTP API — attaches X-API-Key,
     reuses one shared httpx.AsyncClient for the app's lifetime (created/closed
@@ -43,17 +48,17 @@ class BotAPIClient:
     async def overview(self, gid: str) -> dict:
         return await self._get(f"/api/guilds/{gid}/overview")
 
-    async def top(self, gid: str, period: str = "all") -> dict:
-        return await self._get(f"/api/guilds/{gid}/top", {"period": period})
+    async def top(self, gid: str, period: str = "all", limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/top", _params(period=period, limit=limit))
 
-    async def channels(self, gid: str, period: str = "all") -> dict:
-        return await self._get(f"/api/guilds/{gid}/channels", {"period": period})
+    async def channels(self, gid: str, period: str = "all", limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/channels", _params(period=period, limit=limit))
 
     async def activity(self, gid: str, period: str = "month") -> dict:
         return await self._get(f"/api/guilds/{gid}/activity", {"period": period})
 
-    async def voice(self, gid: str, period: str = "all") -> dict:
-        return await self._get(f"/api/guilds/{gid}/voice", {"period": period})
+    async def voice(self, gid: str, period: str = "all", limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/voice", _params(period=period, limit=limit))
 
     async def growth(self, gid: str, period: str = "month") -> dict:
         return await self._get(f"/api/guilds/{gid}/growth", {"period": period})
@@ -61,5 +66,5 @@ class BotAPIClient:
     async def member(self, gid: str, uid: str) -> dict:
         return await self._get(f"/api/guilds/{gid}/members/{uid}")
 
-    async def quietest(self, gid: str) -> dict:
-        return await self._get(f"/api/guilds/{gid}/quietest")
+    async def quietest(self, gid: str, limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/quietest", _params(limit=limit))
