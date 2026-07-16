@@ -5,9 +5,21 @@ server-rendered Jinja2 templates + Chart.js (vendored locally, no CDN). Talks to
 `cogs/webapi.py` read-only HTTP API over localhost + an `X-API-Key` header — it never touches
 `stats.db` directly and never holds a Discord bot token.
 
-Access control: Discord OAuth2 login (`identify guilds` scopes). The bot owner sees every server
-the bot is in; anyone else sees only servers where they're the owner, an Administrator, or have
-Manage Server, intersected with the servers the bot is actually in. No public/anonymous tier in v1.
+Access control: Discord OAuth2 login (`identify guilds` scopes), with two tiers over the bot API's
+`harmless`/`spicy` classification (see `../Kurisu/API.md`):
+
+- **Admin dashboard** (`/guild/{id}…`) — the full stats/mod views. The bot owner sees every server
+  the bot is in; anyone else sees only servers where they're the owner, an Administrator, or have
+  Manage Server, intersected with the servers the bot is actually in.
+- **Member self-view** (`/me`) — any logged-in user can read *their own* leveling + economy stats
+  (the API's `harmless` tier) for any server they share with the bot, no admin rights needed. The
+  viewed user id is always the session's own — a member can never read another member's data.
+  `/me` auto-opens the single shared server, showing a picker only when there's more than one.
+  Each self-view links to that server's **leaderboards** (`/me/{id}/leaderboards`) — the harmless
+  `/leveling` (XP) and `/economy` (bits) rankings, with the viewer's own row highlighted. Same
+  member gate; no admin rights needed.
+
+No anonymous/no-login tier: every data view still requires a Discord login.
 
 ## Setup
 

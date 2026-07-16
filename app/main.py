@@ -71,6 +71,17 @@ def _require_access(request: Request, gid: str) -> RedirectResponse | None:
     return None
 
 
+def _require_member(request: Request, gid: str) -> RedirectResponse | None:
+    """Self-view (harmless economy/leveling) gate: redirect to /login if not
+    signed in; 403 if signed in but not a member of this guild; None otherwise.
+    Unlike _require_access this needs no admin rights — any member qualifies."""
+    if request.session.get("user") is None:
+        return RedirectResponse("/login")
+    if not authz.check_member_access(request, gid):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return None
+
+
 async def _guild_meta(bot_api, gid: str) -> dict:
     guilds = await bot_api.guilds()
     return next((g for g in guilds if g["id"] == gid), {"id": gid, "name": "Unknown", "icon": None})
@@ -84,6 +95,10 @@ async def index(request: Request):
     allowed_ids = set(request.session.get("accessible_guild_ids", []))
     bot_guilds = await request.app.state.bot_api.guilds()
     guilds = [g for g in bot_guilds if g["id"] in allowed_ids]
+    # A user with no admin dashboards but at least one shared server lands on
+    # their own economy/leveling self-view rather than an empty admin picker.
+    if not guilds and request.session.get("member_guild_ids"):
+        return RedirectResponse("/me")
     return templates.TemplateResponse(request, "picker.html", {"user": user, "guilds": guilds})
 
 
@@ -130,7 +145,7 @@ async def auth_callback(request: Request, code: str | None = None, state: str | 
         logger.warning("Could not reach Discord during login: %s", e)
         return _login_error(request, "Couldn't reach Discord. Please try again.", status_code=502)
     try:
-        allowed = await authz.accessible_guilds(request.app.state.bot_api, user, user_guilds)
+        accessible, member = await authz.login_guild_sets(request.app.state.bot_api, user, user_guilds)
     except BotAPIError as e:
         logger.warning("Bot API unavailable during login: %s", e)
         return _login_error(
@@ -140,7 +155,8 @@ async def auth_callback(request: Request, code: str | None = None, state: str | 
             status_code=502,
         )
     request.session["user"] = {"id": user["id"], "username": user.get("username"), "avatar": user.get("avatar")}
-    request.session["accessible_guild_ids"] = [g["id"] for g in allowed]
+    request.session["accessible_guild_ids"] = [g["id"] for g in accessible]
+    request.session["member_guild_ids"] = [g["id"] for g in member]
     return RedirectResponse("/")
 
 
@@ -148,6 +164,76 @@ async def auth_callback(request: Request, code: str | None = None, state: str | 
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/")
+
+
+@app.get("/me")
+async def my_stats(request: Request):
+    """Self-view entry point. Auto-picks the single shared guild; shows a picker
+    only when the user shares more than one server with the bot."""
+    if request.session.get("user") is None:
+        return RedirectResponse("/login")
+    member_ids = request.session.get("member_guild_ids", [])
+    if not member_ids:
+        # Logged in but shares no server with the bot — empty-state page.
+        return templates.TemplateResponse(request, "me.html", {"user": request.session.get("user")})
+    if len(member_ids) == 1:
+        return RedirectResponse(f"/me/{member_ids[0]}")
+    bot_guilds = await request.app.state.bot_api.guilds()
+    member_set = set(member_ids)
+    guilds = [g for g in bot_guilds if g["id"] in member_set]
+    return templates.TemplateResponse(
+        request, "me_picker.html", {"user": request.session.get("user"), "guilds": guilds}
+    )
+
+
+@app.get("/me/{gid}")
+async def my_stats_guild(request: Request, gid: str):
+    redirect = _require_member(request, gid)
+    if redirect:
+        return redirect
+    bot_api = request.app.state.bot_api
+    # Self-scoping: the user id comes from the signed session, NEVER from the
+    # path/query — a member can only ever read their own record, which is the
+    # frontend-side enforcement the API's harmless tier assumes.
+    uid = request.session["user"]["id"]
+    try:
+        profile = await bot_api.member(gid, uid)
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    guild = await _guild_meta(bot_api, gid)
+    return templates.TemplateResponse(
+        request, "me.html",
+        {"user": request.session.get("user"), "guild": guild, "profile": profile},
+    )
+
+
+LEADERBOARD_LIMIT = 50
+
+
+@app.get("/me/{gid}/leaderboards")
+async def leaderboards(request: Request, gid: str):
+    """Member-visible guild leaderboards from the API's harmless /leveling and
+    /economy endpoints. Same member gate as the self-view — no admin rights."""
+    redirect = _require_member(request, gid)
+    if redirect:
+        return redirect
+    bot_api = request.app.state.bot_api
+    try:
+        leveling = await bot_api.leveling(gid, LEADERBOARD_LIMIT)
+        economy = await bot_api.economy(gid, LEADERBOARD_LIMIT)
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    guild = await _guild_meta(bot_api, gid)
+    return templates.TemplateResponse(
+        request, "leaderboards.html",
+        {
+            "user": request.session.get("user"),
+            "guild": guild,
+            "leveling": leveling.get("entries", []),
+            "economy": economy.get("entries", []),
+            "me_id": request.session["user"]["id"],
+        },
+    )
 
 
 @app.get("/guild/{gid}")

@@ -68,3 +68,9 @@ class BotAPIClient:
 
     async def quietest(self, gid: str, limit: int | None = None) -> dict:
         return await self._get(f"/api/guilds/{gid}/quietest", _params(limit=limit))
+
+    async def leveling(self, gid: str, limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/leveling", _params(limit=limit))
+
+    async def economy(self, gid: str, limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/economy", _params(limit=limit))

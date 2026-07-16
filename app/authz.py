@@ -13,24 +13,44 @@ def is_admin_guild(user_guild: dict) -> bool:
     return bool(perms & ADMINISTRATOR) or bool(perms & MANAGE_GUILD)
 
 
-async def accessible_guilds(bot_api, user: dict, user_guilds: list[dict]) -> list[dict]:
-    """Computed ONCE at login (see main.py's /auth/callback) — all bot guilds if
-    this user is the bot owner, else the intersection with guilds where Discord
-    reports them as owner/admin/manage-server. The result (small) is what gets
+async def login_guild_sets(bot_api, user: dict, user_guilds: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Computed ONCE at login (see main.py's /auth/callback) from a single
+    meta()+guilds() round-trip. Returns (accessible, member):
+
+    - `accessible` — guilds whose ADMIN dashboard this user may open: every bot
+      guild if they're the bot owner, else the intersection with guilds where
+      Discord reports them owner/admin/manage-server.
+    - `member` — every guild the user simply belongs to that the bot is also in.
+      Backs the harmless self-view (own economy/leveling), which any member may
+      read regardless of admin rights.
+
+    Both results are small (bounded by the bot's guild count) — that's what gets
     cached in the session, not the raw user_guilds list (which can be large
     enough to blow the signed-cookie size limit for a user in 100+ servers)."""
     meta = await bot_api.meta()
     owner_id = meta.get("owner_id")
     bot_guilds = await bot_api.guilds()
+    member_ids = {g["id"] for g in user_guilds}
+    member = [g for g in bot_guilds if g["id"] in member_ids]
     if owner_id and str(user.get("id")) == str(owner_id):
-        return bot_guilds
-    admin_ids = {g["id"] for g in user_guilds if is_admin_guild(g)}
-    return [g for g in bot_guilds if g["id"] in admin_ids]
+        accessible = bot_guilds
+    else:
+        admin_ids = {g["id"] for g in user_guilds if is_admin_guild(g)}
+        accessible = [g for g in bot_guilds if g["id"] in admin_ids]
+    return accessible, member
 
 
 def check_guild_access(request, gid: str) -> bool:
-    """Cheap per-request check against the accessible-guild-id set cached in
-    the session at login (see accessible_guilds())."""
+    """Cheap per-request check for ADMIN-tier access against the accessible-guild-id
+    set cached in the session at login (see login_guild_sets())."""
     if request.session.get("user") is None:
         return False
     return gid in request.session.get("accessible_guild_ids", [])
+
+
+def check_member_access(request, gid: str) -> bool:
+    """Cheap per-request check for the harmless self-view tier: is the logged-in
+    user a member of this guild (member-guild set cached at login)?"""
+    if request.session.get("user") is None:
+        return False
+    return gid in request.session.get("member_guild_ids", [])
