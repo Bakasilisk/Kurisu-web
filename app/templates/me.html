@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if guild %}My stats — {{ guild.name }}{% else %}My stats{% endif %}{% endblock %}
+{% block content %}
+{% if profile %}
+<h1>My stats — {{ guild.name }}</h1>
+{% if profile.user.avatar %}<img src="{{ profile.user.avatar }}" class="avatar" alt="">{% endif %}
+
+<section class="charts">
+  <div class="chart-box">
+    <h2>Leveling</h2>
+    {% if profile.leveling.xp or profile.leveling.rank %}
+    <table class="stat-table">
+      <tr><th>Level</th><td>{{ profile.leveling.level }}</td></tr>
+      <tr><th>XP</th><td>{{ "{:,}".format(profile.leveling.xp) }}</td></tr>
+      <tr><th>Rank</th><td>{{ ("#" ~ profile.leveling.rank) if profile.leveling.rank else "Unranked" }}</td></tr>
+    </table>
+    {% else %}
+    <p class="empty">No XP yet — send some messages to start leveling up.</p>
+    {% endif %}
+  </div>
+
+  <div class="chart-box">
+    <h2>Economy</h2>
+    {% if profile.economy.bits or profile.economy.rank %}
+    <table class="stat-table">
+      <tr><th>Bits</th><td>{{ "{:,}".format(profile.economy.bits) }}</td></tr>
+      <tr><th>Rank</th><td>{{ ("#" ~ profile.economy.rank) if profile.economy.rank else "Unranked" }}</td></tr>
+    </table>
+    {% else %}
+    <p class="empty">No bits yet — earn some with the bot's economy commands.</p>
+    {% endif %}
+  </div>
+</section>
+{% else %}
+<h1>My stats</h1>
+<p class="empty">You don't share any servers with the bot yet, so there are no stats to show.</p>
+{% endif %}
+{% endblock %}

@@ -58,6 +58,7 @@ body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 .topbar { display: flex; align-items: center; gap: 1rem; padding: .75rem 1.5rem; background: var(--surface-1); border-bottom: 1px solid var(--border); }
 .topbar .brand { font-weight: 700; color: var(--series-1); text-decoration: none; margin-right: auto; }
 .topbar .user { color: var(--text-secondary); }
+.topbar .navlink { color: var(--text-secondary); text-decoration: none; }
 .topbar .logout { color: var(--text-secondary); text-decoration: none; }
 main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; overflow-x: auto; }
 h1, h2 { color: var(--text-primary); }
@@ -91,3 +92,4 @@ table.stat-table th { color: var(--text-secondary); font-weight: 500; }
 
 .avatar { width: 64px; height: 64px; border-radius: 50%; }
 .links a { color: var(--series-1); }
+.empty { color: var(--text-muted); }

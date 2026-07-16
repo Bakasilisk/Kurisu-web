@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Choose a server{% endblock %}
+{% block content %}
+<h1>Choose a server</h1>
+<p>View your own leveling &amp; economy stats for one of your servers.</p>
+<ul class="guild-list">
+  {% for g in guilds %}
+  <li><a href="/me/{{ g.id }}">
+    {% if g.icon %}<img src="{{ g.icon }}" class="guild-icon" alt="">{% endif %}
+    <span>{{ g.name }}</span>
+  </a></li>
+  {% else %}
+  <li>No servers.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
