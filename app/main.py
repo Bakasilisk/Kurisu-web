@@ -46,6 +46,19 @@ def _redirect_uri() -> str:
     return PUBLIC_BASE_URL.rstrip("/") + REDIRECT_PATH
 
 
+def _total_xp_for_level(level: int) -> int:  # mirrors Kurisu cogs/leveling.py curve
+    return 25 * level * (level + 1)
+
+
+def _level_progress(xp: int, level: int) -> dict:
+    start = _total_xp_for_level(level)
+    nxt = _total_xp_for_level(level + 1)
+    span = nxt - start
+    into = max(0, xp - start)
+    return {"into": into, "span": span, "next_xp": nxt,
+            "pct": round(100 * into / span, 1) if span else 0.0}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = httpx.AsyncClient()
@@ -202,9 +215,13 @@ async def my_stats_guild(request: Request, gid: str):
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
     guild = await _guild_meta(bot_api, gid)
+    level_progress = _level_progress(profile["leveling"]["xp"], profile["leveling"]["level"])
     return templates.TemplateResponse(
         request, "me.html",
-        {"user": request.session.get("user"), "guild": guild, "profile": profile},
+        {
+            "user": request.session.get("user"), "guild": guild, "profile": profile,
+            "level_progress": level_progress,
+        },
     )
 
 
@@ -219,9 +236,13 @@ async def leaderboards(request: Request, gid: str):
     if redirect:
         return redirect
     bot_api = request.app.state.bot_api
+    uid = request.session["user"]["id"]
     try:
         leveling = await bot_api.leveling(gid, LEADERBOARD_LIMIT)
         economy = await bot_api.economy(gid, LEADERBOARD_LIMIT)
+        # Self-scoped lookup so the "your standing" banner works even when the
+        # member falls outside the top-LEADERBOARD_LIMIT list above.
+        me = await bot_api.member(gid, uid)
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
     guild = await _guild_meta(bot_api, gid)
@@ -232,7 +253,11 @@ async def leaderboards(request: Request, gid: str):
             "guild": guild,
             "leveling": leveling.get("entries", []),
             "economy": economy.get("entries", []),
-            "me_id": request.session["user"]["id"],
+            "me_id": uid,
+            "my_leveling_rank": me["leveling"]["rank"],
+            "my_economy_rank": me["economy"]["rank"],
+            "my_xp": me["leveling"]["xp"],
+            "my_bits": me["economy"]["bits"],
         },
     )
 
