@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Moderation & security — {{ guild.name }}{% endblock %}
+{% block content %}
+<h1>Moderation &amp; security — {{ guild.name }}</h1>
+
+<section>
+  <h2>Warnings</h2>
+  {% if warnings %}
+  <table class="stat-table">
+    <tr><th>Member</th><th>Count</th><th>Warnings</th></tr>
+    {% for e in warnings %}
+    <tr>
+      <td><a href="/guild/{{ guild.id }}/member/{{ e.user.id }}">{{ e.user.name }}</a></td>
+      <td>{{ e.count }}</td>
+      <td>
+        <ul>
+          {% for w in e.warnings %}
+          <li>{{ w.reason }} — {{ w.moderator.name if w.moderator else "Unknown" }} — {{ w.timestamp }}</li>
+          {% endfor %}
+        </ul>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="empty">No warnings recorded.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Security</h2>
+  <section class="cards">
+    <div class="card">
+      <span class="label">Mode</span>
+      <span class="value"><span class="badge {{ 'badge-good' if security.mode == 'active' else 'badge-neutral' }}">{{ security.mode }}</span></span>
+    </div>
+    <div class="card">
+      <span class="label">Lockdown</span>
+      <span class="value"><span class="badge {{ 'badge-critical' if security.lockdown.active else 'badge-good' }}">{{ "active" if security.lockdown.active else "inactive" }}</span></span>
+    </div>
+    {% if security.lockdown.active %}
+    <div class="card">
+      <span class="label">Remaining</span>
+      <span class="value">{{ "stay-locked" if security.lockdown.stay_locked else (security.lockdown.remaining_seconds ~ "s") }}</span>
+    </div>
+    {% endif %}
+    <div class="card"><span class="label">Exempt roles</span><span class="value">{{ security.exempt_roles }}</span></div>
+    <div class="card"><span class="label">Exempt users</span><span class="value">{{ security.exempt_users }}</span></div>
+    <div class="card"><span class="label">Protected roles</span><span class="value">{{ security.protected_roles }}</span></div>
+  </section>
+  <p class="empty">Log channel: {{ ("#" ~ security.log_channel.name) if security.log_channel else "not set" }}</p>
+</section>
+
+<section>
+  <h2>Verification</h2>
+  <table class="stat-table">
+    <tr><th>Granter role</th><td>{{ verification.granter_role.name if verification.granter_role else "not set" }}</td></tr>
+    <tr><th>Target role</th><td>{{ verification.target_role.name if verification.target_role else "not set" }}</td></tr>
+    <tr><th>Welcome channel</th><td>{{ ("#" ~ verification.welcome_channel.name) if verification.welcome_channel else "not set" }}</td></tr>
+    <tr><th>Welcome enabled</th><td>{{ "yes" if verification.welcome_enabled else "no" }}</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Palantir</h2>
+  <p class="empty">Configuration and cached-message count only — no message content is exposed.</p>
+  <table class="stat-table">
+    <tr><th>Log channel</th><td>{{ ("#" ~ palantir.log_channel.name) if palantir.log_channel else "not set" }}</td></tr>
+    <tr><th>Archive attachments</th><td>{{ "yes" if palantir.archive_attachments else "no" }}</td></tr>
+    <tr><th>Muted categories</th><td>{{ (palantir.muted_categories | join(", ")) if palantir.muted_categories else "none" }}</td></tr>
+    <tr><th>Cached messages</th><td>{{ "{:,}".format(palantir.cached_messages) }}</td></tr>
+  </table>
+</section>
+
+<section class="links"><a href="/guild/{{ guild.id }}">← Dashboard</a></section>
+{% endblock %}

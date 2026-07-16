@@ -94,3 +94,8 @@ table.stat-table th { color: var(--text-secondary); font-weight: 500; }
 .links a { color: var(--series-1); }
 .empty { color: var(--text-muted); }
 .lb-table tr.me td { background: var(--seq-0); font-weight: 600; }
+
+.badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600; border: 1px solid currentColor; }
+.badge-good { color: var(--good); }
+.badge-critical { color: var(--critical); }
+.badge-neutral { color: var(--text-secondary); border-color: var(--border); }

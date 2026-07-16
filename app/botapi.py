@@ -74,3 +74,15 @@ class BotAPIClient:
 
     async def economy(self, gid: str, limit: int | None = None) -> dict:
         return await self._get(f"/api/guilds/{gid}/economy", _params(limit=limit))
+
+    async def warnings(self, gid: str, limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/warnings", _params(limit=limit))
+
+    async def security(self, gid: str) -> dict:
+        return await self._get(f"/api/guilds/{gid}/security")
+
+    async def verification(self, gid: str) -> dict:
+        return await self._get(f"/api/guilds/{gid}/verification")
+
+    async def palantir(self, gid: str) -> dict:
+        return await self._get(f"/api/guilds/{gid}/palantir")

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -329,4 +330,33 @@ async def quietest_page(request: Request, gid: str):
     return templates.TemplateResponse(
         request, "quietest.html",
         {"user": request.session.get("user"), "guild": guild, "data": data},
+    )
+
+
+@app.get("/guild/{gid}/moderation")
+async def moderation_page(request: Request, gid: str):
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    bot_api = request.app.state.bot_api
+    try:
+        warnings, security, verification, palantir = await asyncio.gather(
+            bot_api.warnings(gid, limit=100),
+            bot_api.security(gid),
+            bot_api.verification(gid),
+            bot_api.palantir(gid),
+        )
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    guild = await _guild_meta(bot_api, gid)
+    return templates.TemplateResponse(
+        request, "moderation.html",
+        {
+            "user": request.session.get("user"),
+            "guild": guild,
+            "warnings": warnings.get("entries", []),
+            "security": security,
+            "verification": verification,
+            "palantir": palantir,
+        },
     )

@@ -10,7 +10,10 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with two tiers 
 
 - **Admin dashboard** (`/guild/{id}…`) — the full stats/mod views. The bot owner sees every server
   the bot is in; anyone else sees only servers where they're the owner, an Administrator, or have
-  Manage Server, intersected with the servers the bot is actually in.
+  Manage Server, intersected with the servers the bot is actually in. Includes a **Moderation &
+  security** page (`/guild/{id}/moderation`) surfacing the spicy `/warnings`, `/security`,
+  `/verification`, and `/palantir` endpoints — so the site now consumes all 16 of the bot API's
+  documented endpoints.
 - **Member self-view** (`/me`) — any logged-in user can read *their own* leveling + economy stats
   (the API's `harmless` tier) for any server they share with the bot, no admin rights needed. The
   viewed user id is always the session's own — a member can never read another member's data.
