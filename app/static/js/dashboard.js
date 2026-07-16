@@ -131,22 +131,26 @@ function renderHeatmap(container, grid, weekdayLabels) {
   container.innerHTML = html;
 }
 
+// Ranked lists are truncated server-side (the bot API's `limit` param) so a
+// large guild doesn't ship its full member list just to draw a 10-bar chart.
+const TOP_N = 10;
+
 async function loadDashboardData(gid, period) {
   const [top, channels, voice, growth, activity] = await Promise.all([
-    fetchJSON(`/guild/${gid}/data/top?period=${period}`),
-    fetchJSON(`/guild/${gid}/data/channels?period=${period}`),
-    fetchJSON(`/guild/${gid}/data/voice?period=${period}`),
+    fetchJSON(`/guild/${gid}/data/top?period=${period}&limit=${TOP_N}`),
+    fetchJSON(`/guild/${gid}/data/channels?period=${period}&limit=${TOP_N}`),
+    fetchJSON(`/guild/${gid}/data/voice?period=${period}&limit=${TOP_N}`),
     fetchJSON(`/guild/${gid}/data/growth?period=${period}`),
     fetchJSON(`/guild/${gid}/data/activity?period=${period}`),
   ]);
 
-  const topN = top.entries.slice(0, 10);
+  const topN = top.entries;
   renderBarChart("chart-top", "top", topN.map((e) => e.user.name), topN.map((e) => e.count), "Messages");
 
-  const chN = channels.entries.slice(0, 10);
+  const chN = channels.entries;
   renderBarChart("chart-channels", "channels", chN.map((e) => e.channel.name), chN.map((e) => e.count), "Messages");
 
-  const voiceN = voice.entries.slice(0, 10);
+  const voiceN = voice.entries;
   renderBarChart(
     "chart-voice", "voice", voiceN.map((e) => e.user.name), voiceN.map((e) => Math.round(e.seconds / 60)), "Minutes"
   );

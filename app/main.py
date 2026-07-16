@@ -168,19 +168,19 @@ async def guild_dashboard(request: Request, gid: str):
 
 
 @app.get("/guild/{gid}/data/top")
-async def data_top(request: Request, gid: str, period: str = "all"):
+async def data_top(request: Request, gid: str, period: str = "all", limit: int | None = None):
     redirect = _require_access(request, gid)
     if redirect:
         return redirect
-    return JSONResponse(await request.app.state.bot_api.top(gid, period))
+    return JSONResponse(await request.app.state.bot_api.top(gid, period, limit))
 
 
 @app.get("/guild/{gid}/data/channels")
-async def data_channels(request: Request, gid: str, period: str = "all"):
+async def data_channels(request: Request, gid: str, period: str = "all", limit: int | None = None):
     redirect = _require_access(request, gid)
     if redirect:
         return redirect
-    return JSONResponse(await request.app.state.bot_api.channels(gid, period))
+    return JSONResponse(await request.app.state.bot_api.channels(gid, period, limit))
 
 
 @app.get("/guild/{gid}/data/activity")
@@ -192,11 +192,11 @@ async def data_activity(request: Request, gid: str, period: str = "month"):
 
 
 @app.get("/guild/{gid}/data/voice")
-async def data_voice(request: Request, gid: str, period: str = "all"):
+async def data_voice(request: Request, gid: str, period: str = "all", limit: int | None = None):
     redirect = _require_access(request, gid)
     if redirect:
         return redirect
-    return JSONResponse(await request.app.state.bot_api.voice(gid, period))
+    return JSONResponse(await request.app.state.bot_api.voice(gid, period, limit))
 
 
 @app.get("/guild/{gid}/data/growth")
@@ -208,11 +208,11 @@ async def data_growth(request: Request, gid: str, period: str = "month"):
 
 
 @app.get("/guild/{gid}/data/quietest")
-async def data_quietest(request: Request, gid: str):
+async def data_quietest(request: Request, gid: str, limit: int | None = None):
     redirect = _require_access(request, gid)
     if redirect:
         return redirect
-    return JSONResponse(await request.app.state.bot_api.quietest(gid))
+    return JSONResponse(await request.app.state.bot_api.quietest(gid, limit))
 
 
 @app.get("/guild/{gid}/member/{uid}")
@@ -238,7 +238,7 @@ async def quietest_page(request: Request, gid: str):
     if redirect:
         return redirect
     bot_api = request.app.state.bot_api
-    data = await bot_api.quietest(gid)
+    data = await bot_api.quietest(gid, limit=25)
     guild = await _guild_meta(bot_api, gid)
     return templates.TemplateResponse(
         request, "quietest.html",
