@@ -93,3 +93,4 @@ table.stat-table th { color: var(--text-secondary); font-weight: 500; }
 .avatar { width: 64px; height: 64px; border-radius: 50%; }
 .links a { color: var(--series-1); }
 .empty { color: var(--text-muted); }
+.lb-table tr.me td { background: var(--seq-0); font-weight: 600; }

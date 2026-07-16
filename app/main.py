@@ -207,6 +207,35 @@ async def my_stats_guild(request: Request, gid: str):
     )
 
 
+LEADERBOARD_LIMIT = 50
+
+
+@app.get("/me/{gid}/leaderboards")
+async def leaderboards(request: Request, gid: str):
+    """Member-visible guild leaderboards from the API's harmless /leveling and
+    /economy endpoints. Same member gate as the self-view — no admin rights."""
+    redirect = _require_member(request, gid)
+    if redirect:
+        return redirect
+    bot_api = request.app.state.bot_api
+    try:
+        leveling = await bot_api.leveling(gid, LEADERBOARD_LIMIT)
+        economy = await bot_api.economy(gid, LEADERBOARD_LIMIT)
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    guild = await _guild_meta(bot_api, gid)
+    return templates.TemplateResponse(
+        request, "leaderboards.html",
+        {
+            "user": request.session.get("user"),
+            "guild": guild,
+            "leveling": leveling.get("entries", []),
+            "economy": economy.get("entries", []),
+            "me_id": request.session["user"]["id"],
+        },
+    )
+
+
 @app.get("/guild/{gid}")
 async def guild_dashboard(request: Request, gid: str):
     redirect = _require_access(request, gid)

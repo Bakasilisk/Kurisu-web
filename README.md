@@ -15,6 +15,9 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with two tiers 
   (the API's `harmless` tier) for any server they share with the bot, no admin rights needed. The
   viewed user id is always the session's own — a member can never read another member's data.
   `/me` auto-opens the single shared server, showing a picker only when there's more than one.
+  Each self-view links to that server's **leaderboards** (`/me/{id}/leaderboards`) — the harmless
+  `/leveling` (XP) and `/economy` (bits) rankings, with the viewer's own row highlighted. Same
+  member gate; no admin rights needed.
 
 No anonymous/no-login tier: every data view still requires a Discord login.
 
