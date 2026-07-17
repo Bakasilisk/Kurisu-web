@@ -87,6 +87,8 @@ function renderGrowthChart(growth) {
       },
     },
   });
+  const caption = document.getElementById("growth-caption");
+  if (caption) caption.textContent = `${growth.messages.toLocaleString()} messages this period`;
 }
 
 function hexToRgb(hex) {
@@ -113,7 +115,9 @@ function sequentialColor(t) {
   return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 }
 
-function renderHeatmap(container, grid, weekdayLabels) {
+function renderHeatmap(container, activity) {
+  const grid = activity.grid;
+  const weekdayLabels = activity.weekday_labels;
   const vmax = Math.max(1, ...grid.flat());
   let html = "<table class='heatmap'><thead><tr><th></th>";
   for (let h = 0; h < 24; h++) html += `<th>${h}</th>`;
@@ -129,6 +133,14 @@ function renderHeatmap(container, grid, weekdayLabels) {
   }
   html += "</tbody></table>";
   container.innerHTML = html;
+
+  const caption = document.getElementById("activity-caption");
+  if (caption) {
+    // Peak fields are 0 (not null) when there's no activity — gate on total.
+    caption.textContent = activity.total
+      ? `Peak: ${weekdayLabels[activity.peak_weekday]} ${String(activity.peak_hour).padStart(2, "0")}:00 · ${activity.total.toLocaleString()} messages`
+      : "No activity in this period";
+  }
 }
 
 // Ranked lists are truncated server-side (the bot API's `limit` param) so a
@@ -156,7 +168,7 @@ async function loadDashboardData(gid, period) {
   );
 
   renderGrowthChart(growth);
-  renderHeatmap(document.getElementById("activity-heatmap"), activity.grid, activity.weekday_labels);
+  renderHeatmap(document.getElementById("activity-heatmap"), activity);
 }
 
 function initDashboard(gid) {

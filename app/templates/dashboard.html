@@ -10,7 +10,8 @@
   <div class="card"><span class="label">Avg/day</span><span class="value">{{ "%.1f"|format(overview.avg_day) }}</span></div>
   <div class="card"><span class="label">Reactions</span><span class="value">{{ "{:,}".format(overview.reactions) }}</span></div>
   <div class="card"><span class="label">Voice time</span><span class="value" data-seconds="{{ overview.voice_seconds }}"></span></div>
-  <div class="card"><span class="label">Trend (30d)</span><span class="value">{{ overview.trend.text }}</span></div>
+  <div class="card"><span class="label">First activity</span><span class="value">{{ overview.first_day or "—" }}</span></div>
+  <div class="card" title="{{ overview.trend.recent }} msgs recent 30d vs {{ overview.trend.prior }} prior{{ (' (%+.1f%%)'|format(overview.trend.pct)) if overview.trend.pct is not none else '' }}"><span class="label">Trend (30d)</span><span class="value">{{ overview.trend.text }}</span></div>
 </section>
 
 <section class="period-selector">
@@ -28,12 +29,13 @@
   <div class="chart-box"><h2>Top posters</h2><canvas id="chart-top"></canvas></div>
   <div class="chart-box"><h2>Busiest channels</h2><canvas id="chart-channels"></canvas></div>
   <div class="chart-box"><h2>Voice leaderboard</h2><canvas id="chart-voice"></canvas></div>
-  <div class="chart-box"><h2>Growth</h2><canvas id="chart-growth"></canvas></div>
+  <div class="chart-box"><h2>Growth</h2><canvas id="chart-growth"></canvas><p class="progress-label" id="growth-caption"></p></div>
 </section>
 
 <section class="activity">
   <h2>Activity (hour × weekday)</h2>
   <div id="activity-heatmap"></div>
+  <p class="progress-label" id="activity-caption"></p>
 </section>
 
 <section class="links">

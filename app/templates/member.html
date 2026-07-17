@@ -3,10 +3,45 @@
 {% block content %}
 <h1>{{ profile.user.name }}</h1>
 {% if profile.user.avatar %}<img src="{{ profile.user.avatar }}" class="avatar" alt="">{% endif %}
+
+<section class="charts">
+  <div class="chart-box">
+    <h2>Leveling</h2>
+    {% if profile.leveling.xp or profile.leveling.rank %}
+    <table class="stat-table">
+      <tr><th>Level</th><td>{{ profile.leveling.level }}</td></tr>
+      <tr><th>XP</th><td>{{ "{:,}".format(profile.leveling.xp) }}</td></tr>
+      <tr><th>Rank</th><td>{{ ("#" ~ profile.leveling.rank) if profile.leveling.rank else "Unranked" }}</td></tr>
+    </table>
+    {% if level_progress %}
+    <div class="progress"><div class="progress-fill" style="width: {{ level_progress.pct }}%"></div></div>
+    <p class="progress-label">{{ "{:,}".format(level_progress.into) }}/{{ "{:,}".format(level_progress.span) }} XP to level {{ profile.leveling.level + 1 }}</p>
+    {% endif %}
+    {% else %}
+    <p class="empty">No XP yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="chart-box">
+    <h2>Economy</h2>
+    {% if profile.economy.bits or profile.economy.rank %}
+    <table class="stat-table">
+      <tr><th>Bits</th><td>{{ "{:,}".format(profile.economy.bits) }}</td></tr>
+      <tr><th>Rank</th><td>{{ ("#" ~ profile.economy.rank) if profile.economy.rank else "Unranked" }}</td></tr>
+      <tr><th>Payday streak</th><td>{{ (profile.economy.streak ~ " days") if profile.economy.streak else "—" }}</td></tr>
+    </table>
+    {% else %}
+    <p class="empty">No bits yet.</p>
+    {% endif %}
+  </div>
+</section>
+
+<h2>Activity</h2>
 <table class="stat-table">
   <tr><th>Total messages</th><td>{{ "{:,}".format(profile.total_messages) }}</td></tr>
   <tr><th>Total words</th><td>{{ "{:,}".format(profile.total_words) }}</td></tr>
   <tr><th>Active days</th><td>{{ profile.active_days }}</td></tr>
+  <tr><th>First day</th><td>{{ profile.first_day or "—" }}</td></tr>
   <tr><th>Server rank</th><td>{{ ("#" ~ profile.server_rank) if profile.server_rank else "Unranked" }}</td></tr>
   <tr><th>% of server</th><td>{{ "%.1f"|format(profile.pct_of_server) }}%</td></tr>
   <tr><th>Words/message</th><td>{{ "%.1f"|format(profile.words_per_msg) }}</td></tr>

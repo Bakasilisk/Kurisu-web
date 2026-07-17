@@ -359,9 +359,11 @@ async def member_profile(request: Request, gid: str, uid: str):
     except BotAPIError:
         raise HTTPException(status_code=404, detail="member not found")
     guild = await _guild_meta(bot_api, gid)
+    level_progress = _level_progress(profile["leveling"]["xp"], profile["leveling"]["level"])
     return templates.TemplateResponse(
         request, "member.html",
-        {"user": request.session.get("user"), "guild": guild, "profile": profile},
+        {"user": request.session.get("user"), "guild": guild, "profile": profile,
+         "level_progress": level_progress},
     )
 
 
