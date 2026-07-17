@@ -27,6 +27,7 @@
     <table class="stat-table">
       <tr><th>Bits</th><td>{{ "{:,}".format(profile.economy.bits) }}</td></tr>
       <tr><th>Rank</th><td>{{ ("#" ~ profile.economy.rank) if profile.economy.rank else "Unranked" }}</td></tr>
+      <tr><th>Payday streak</th><td>{{ (profile.economy.streak ~ " days") if profile.economy.streak else "—" }}</td></tr>
     </table>
     {% else %}
     <p class="empty">No bits yet — earn some with the bot's economy commands.</p>

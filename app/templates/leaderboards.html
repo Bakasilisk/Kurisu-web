@@ -29,12 +29,13 @@
     <h2>Economy</h2>
     {% if economy %}
     <table class="stat-table lb-table">
-      <tr><th>#</th><th>Member</th><th>Bits</th></tr>
+      <tr><th>#</th><th>Member</th><th>Bits</th><th>Streak</th></tr>
       {% for e in economy %}
       <tr{% if e.user.id == me_id %} class="me"{% endif %}>
         <td>{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</td>
         <td>{% if e.user.avatar %}<img src="{{ e.user.avatar }}" class="lb-avatar" alt="">{% endif %} {{ e.user.name }}</td>
         <td>{{ "{:,}".format(e.bits) }}</td>
+        <td>{{ e.streak ~ "d" if e.streak else "—" }}</td>
       </tr>
       {% endfor %}
     </table>
