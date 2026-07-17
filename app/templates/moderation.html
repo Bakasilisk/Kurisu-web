@@ -28,6 +28,14 @@
 </section>
 
 <section>
+  <h2>Moderation</h2>
+  <table class="stat-table">
+    <tr><th>Mod-log channel</th><td>{{ ("#" ~ moderation.mod_log_channel.name) if moderation.mod_log_channel else "not set" }}</td></tr>
+    <tr><th>Locked channels</th><td>{% if moderation.locked_channels %}#{{ moderation.locked_channels | map(attribute="name") | join(", #") }}{% else %}None{% endif %}</td></tr>
+  </table>
+</section>
+
+<section>
   <h2>Security</h2>
   <section class="cards">
     <div class="card">
@@ -69,6 +77,19 @@
     <tr><th>Archive attachments</th><td>{{ "yes" if palantir.archive_attachments else "no" }}</td></tr>
     <tr><th>Muted categories</th><td>{{ (palantir.muted_categories | join(", ")) if palantir.muted_categories else "none" }}</td></tr>
     <tr><th>Cached messages</th><td>{{ "{:,}".format(palantir.cached_messages) }}</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Features</h2>
+  <table class="stat-table">
+    <tr><th>Cog</th><th>Status</th></tr>
+    {% for cog in features %}
+    <tr>
+      <td>{{ cog.name }}</td>
+      <td><span class="badge {{ 'badge-critical' if cog.globally_disabled else ('badge-neutral' if not cog.enabled else 'badge-good') }}">{{ "globally off" if cog.globally_disabled else ("off" if not cog.enabled else "on") }}</span></td>
+    </tr>
+    {% endfor %}
   </table>
 </section>
 

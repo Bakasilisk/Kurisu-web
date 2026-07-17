@@ -372,11 +372,13 @@ async def moderation_page(request: Request, gid: str):
         return redirect
     bot_api = request.app.state.bot_api
     try:
-        warnings, security, verification, palantir = await asyncio.gather(
+        warnings, security, verification, palantir, moderation, features = await asyncio.gather(
             bot_api.warnings(gid, limit=100),
             bot_api.security(gid),
             bot_api.verification(gid),
             bot_api.palantir(gid),
+            bot_api.moderation(gid),
+            bot_api.features(gid),
         )
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
@@ -390,5 +392,7 @@ async def moderation_page(request: Request, gid: str):
             "security": security,
             "verification": verification,
             "palantir": palantir,
+            "moderation": moderation,
+            "features": features.get("cogs", []),
         },
     )
