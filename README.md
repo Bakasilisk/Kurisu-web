@@ -5,15 +5,17 @@ server-rendered Jinja2 templates + Chart.js (vendored locally, no CDN). Talks to
 `cogs/webapi.py` read-only HTTP API over localhost + an `X-API-Key` header — it never touches
 `stats.db` directly and never holds a Discord bot token.
 
-Access control: Discord OAuth2 login (`identify guilds` scopes), with two tiers over the bot API's
-`harmless`/`spicy` classification (see `../Kurisu/API.md`):
+Access control: Discord OAuth2 login (`identify guilds` scopes), with three tiers over the bot API's
+`harmless`/`spicy`/`self` classification (see `../Kurisu/API.md`):
 
 - **Admin dashboard** (`/guild/{id}…`) — the full stats/mod views. The bot owner sees every server
   the bot is in; anyone else sees only servers where they're the owner, an Administrator, or have
   Manage Server, intersected with the servers the bot is actually in. Includes a **Moderation &
   security** page (`/guild/{id}/moderation`) surfacing the spicy `/warnings`, `/security`,
-  `/verification`, and `/palantir` endpoints — so the site now consumes all 16 of the bot API's
-  documented endpoints.
+  `/verification`, and `/palantir` endpoints, plus a Moderation-config section (mod-log channel +
+  locked channels, from `/moderation`) and a Features section (per-guild `.feature` cog on/off
+  badges, from `/features`) — so the site now consumes all 19 of the bot API's documented
+  endpoints.
 - **Member self-view** (`/me`) — any logged-in user can read *their own* full harmless profile
   (leveling + economy + activity stats) for any server they share with the bot, no admin rights
   needed. The viewed user id is always the session's own — a member can never read another
@@ -22,10 +24,14 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with two tiers 
   server-side from the bot's level curve, no extra API call), and the page also renders the rest
   of the member profile the API already returns — total messages/words, active days, server rank,
   busiest hour, voice time, reactions, and top channels — reusing the admin member-profile layout.
+  A "Your reminders" card lists the user's own pending reminders, from the self-tier
+  `/api/users/{uid}/reminders` endpoint — same rule as the rest of `/me`: `uid` always comes from
+  the session, never from user input, so a member can never read another member's reminders.
   Each self-view links to that server's **leaderboards** (`/me/{id}/leaderboards`) — the harmless
   `/leveling` (XP) and `/economy` (bits) rankings, with the viewer's own row highlighted, avatars
   and 🥇🥈🥉 medals on the top three, and a "your standing" banner showing the viewer's rank even
-  when they fall outside the displayed top 50. Same member gate; no admin rights needed.
+  when they fall outside the displayed top 50. Economy views (leaderboard and self-view) also show
+  each member's payday streak. Same member gate; no admin rights needed.
 
 No anonymous/no-login tier: every data view still requires a Discord login.
 
