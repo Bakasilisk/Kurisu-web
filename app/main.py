@@ -196,7 +196,18 @@ async def my_stats(request: Request):
         member_ids = request.session.get("member_guild_ids", [])
     if not member_ids:
         # Logged in but shares no server with the bot — empty-state page.
-        return templates.TemplateResponse(request, "me.html", {"user": request.session.get("user")})
+        # Self-scoping: the user id comes from the signed session, NEVER from
+        # the path/query — see my_stats_guild's "Self-scoping" comment below.
+        uid = request.session["user"]["id"]
+        try:
+            reminders = (await request.app.state.bot_api.user_reminders(uid)).get("reminders", [])
+        except BotAPIError:
+            # The empty-state page must still render when the bot API is
+            # down — the reminders card is just hidden (None, not []).
+            reminders = None
+        return templates.TemplateResponse(
+            request, "me.html", {"user": request.session.get("user"), "reminders": reminders}
+        )
     if len(member_ids) == 1:
         return RedirectResponse(f"/me/{member_ids[0]}")
     bot_guilds = await request.app.state.bot_api.guilds()
@@ -215,10 +226,13 @@ async def my_stats_guild(request: Request, gid: str):
     bot_api = request.app.state.bot_api
     # Self-scoping: the user id comes from the signed session, NEVER from the
     # path/query — a member can only ever read their own record, which is the
-    # frontend-side enforcement the API's harmless tier assumes.
+    # frontend-side enforcement the API's harmless tier assumes. The same uid
+    # also feeds user_reminders below, whose self tier requires exactly this
+    # session-derived (never path/query-derived) sourcing.
     uid = request.session["user"]["id"]
     try:
         profile = await bot_api.member(gid, uid)
+        reminders = (await bot_api.user_reminders(uid)).get("reminders", [])
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
     guild = await _guild_meta(bot_api, gid)
@@ -227,7 +241,7 @@ async def my_stats_guild(request: Request, gid: str):
         request, "me.html",
         {
             "user": request.session.get("user"), "guild": guild, "profile": profile,
-            "level_progress": level_progress,
+            "level_progress": level_progress, "reminders": reminders,
         },
     )
 

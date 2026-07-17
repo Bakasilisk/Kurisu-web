@@ -58,10 +58,46 @@
 <p class="empty">No channel activity yet.</p>
 {% endif %}
 
+{% if reminders is defined and reminders is not none %}
+<h2>Your reminders</h2>
+{% if reminders %}
+<table class="stat-table">
+  <tr><th>When</th><th>Where</th><th>Text</th></tr>
+  {% for r in reminders %}
+  <tr>
+    <td>{{ r.fire_at[:16] | replace('T', ' ') }} UTC</td>
+    <td>{% if r.guild %}#{{ r.channel.name }} · {{ r.guild.name }}{% else %}{{ r.channel.name }}{% endif %}</td>
+    <td>{{ r.text }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="empty">No pending reminders.</p>
+{% endif %}
+{% endif %}
+
 <section class="links"><a href="/me/{{ guild.id }}/leaderboards">Server leaderboards →</a></section>
 {% else %}
 <h1>My stats</h1>
 <p class="empty">You don't share any servers with the bot yet, so there are no stats to show.</p>
+
+{% if reminders is defined and reminders is not none %}
+<h2>Your reminders</h2>
+{% if reminders %}
+<table class="stat-table">
+  <tr><th>When</th><th>Where</th><th>Text</th></tr>
+  {% for r in reminders %}
+  <tr>
+    <td>{{ r.fire_at[:16] | replace('T', ' ') }} UTC</td>
+    <td>{% if r.guild %}#{{ r.channel.name }} · {{ r.guild.name }}{% else %}{{ r.channel.name }}{% endif %}</td>
+    <td>{{ r.text }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="empty">No pending reminders.</p>
+{% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}
 {% block scripts %}<script src="/static/js/dashboard.js"></script><script>formatVoiceSeconds();</script>{% endblock %}
