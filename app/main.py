@@ -159,7 +159,7 @@ async def auth_callback(request: Request, code: str | None = None, state: str | 
         logger.warning("Could not reach Discord during login: %s", e)
         return _login_error(request, "Couldn't reach Discord. Please try again.", status_code=502)
     try:
-        accessible, member = await authz.login_guild_sets(request.app.state.bot_api, user, user_guilds)
+        accessible, member, is_owner = await authz.login_guild_sets(request.app.state.bot_api, user, user_guilds)
     except BotAPIError as e:
         logger.warning("Bot API unavailable during login: %s", e)
         return _login_error(
@@ -171,6 +171,7 @@ async def auth_callback(request: Request, code: str | None = None, state: str | 
     request.session["user"] = {"id": user["id"], "username": user.get("username"), "avatar": user.get("avatar")}
     request.session["accessible_guild_ids"] = [g["id"] for g in accessible]
     request.session["member_guild_ids"] = [g["id"] for g in member]
+    request.session["is_owner"] = is_owner
     return RedirectResponse("/")
 
 
@@ -186,7 +187,13 @@ async def my_stats(request: Request):
     only when the user shares more than one server with the bot."""
     if request.session.get("user") is None:
         return RedirectResponse("/login")
-    member_ids = request.session.get("member_guild_ids", [])
+    # The bot owner may open the self-view on every bot guild, so let them pick
+    # from all of them (accessible == every bot guild for the owner), not just
+    # the servers they personally belong to.
+    if request.session.get("is_owner"):
+        member_ids = request.session.get("accessible_guild_ids", [])
+    else:
+        member_ids = request.session.get("member_guild_ids", [])
     if not member_ids:
         # Logged in but shares no server with the bot — empty-state page.
         return templates.TemplateResponse(request, "me.html", {"user": request.session.get("user")})
