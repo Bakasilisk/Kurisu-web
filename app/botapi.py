@@ -86,3 +86,12 @@ class BotAPIClient:
 
     async def palantir(self, gid: str) -> dict:
         return await self._get(f"/api/guilds/{gid}/palantir")
+
+    async def moderation(self, gid: str) -> dict:
+        return await self._get(f"/api/guilds/{gid}/moderation")
+
+    async def features(self, gid: str) -> dict:
+        return await self._get(f"/api/guilds/{gid}/features")
+
+    async def user_reminders(self, uid: str) -> dict:
+        return await self._get(f"/api/users/{uid}/reminders")
