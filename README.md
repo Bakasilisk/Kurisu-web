@@ -14,13 +14,18 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with two tiers 
   security** page (`/guild/{id}/moderation`) surfacing the spicy `/warnings`, `/security`,
   `/verification`, and `/palantir` endpoints — so the site now consumes all 16 of the bot API's
   documented endpoints.
-- **Member self-view** (`/me`) — any logged-in user can read *their own* leveling + economy stats
-  (the API's `harmless` tier) for any server they share with the bot, no admin rights needed. The
-  viewed user id is always the session's own — a member can never read another member's data.
-  `/me` auto-opens the single shared server, showing a picker only when there's more than one.
+- **Member self-view** (`/me`) — any logged-in user can read *their own* full harmless profile
+  (leveling + economy + activity stats) for any server they share with the bot, no admin rights
+  needed. The viewed user id is always the session's own — a member can never read another
+  member's data. `/me` auto-opens the single shared server, showing a picker only when there's
+  more than one. The leveling card shows an XP progress bar toward the next level (computed
+  server-side from the bot's level curve, no extra API call), and the page also renders the rest
+  of the member profile the API already returns — total messages/words, active days, server rank,
+  busiest hour, voice time, reactions, and top channels — reusing the admin member-profile layout.
   Each self-view links to that server's **leaderboards** (`/me/{id}/leaderboards`) — the harmless
-  `/leveling` (XP) and `/economy` (bits) rankings, with the viewer's own row highlighted. Same
-  member gate; no admin rights needed.
+  `/leveling` (XP) and `/economy` (bits) rankings, with the viewer's own row highlighted, avatars
+  and 🥇🥈🥉 medals on the top three, and a "your standing" banner showing the viewer's rank even
+  when they fall outside the displayed top 50. Same member gate; no admin rights needed.
 
 No anonymous/no-login tier: every data view still requires a Discord login.
 

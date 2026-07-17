@@ -14,6 +14,8 @@
       <tr><th>XP</th><td>{{ "{:,}".format(profile.leveling.xp) }}</td></tr>
       <tr><th>Rank</th><td>{{ ("#" ~ profile.leveling.rank) if profile.leveling.rank else "Unranked" }}</td></tr>
     </table>
+    <div class="progress"><div class="progress-fill" style="width: {{ level_progress.pct }}%"></div></div>
+    <p class="progress-label">{{ "{:,}".format(level_progress.into) }}/{{ "{:,}".format(level_progress.span) }} XP to level {{ profile.leveling.level + 1 }}</p>
     {% else %}
     <p class="empty">No XP yet — send some messages to start leveling up.</p>
     {% endif %}
@@ -32,9 +34,34 @@
   </div>
 </section>
 
+<h2>Activity</h2>
+<table class="stat-table">
+  <tr><th>Total messages</th><td>{{ "{:,}".format(profile.total_messages) }}</td></tr>
+  <tr><th>Total words</th><td>{{ "{:,}".format(profile.total_words) }}</td></tr>
+  <tr><th>Active days</th><td>{{ profile.active_days }}</td></tr>
+  <tr><th>First day</th><td>{{ profile.first_day or "—" }}</td></tr>
+  <tr><th>Server rank</th><td>{{ ("#" ~ profile.server_rank) if profile.server_rank else "Unranked" }}</td></tr>
+  <tr><th>% of server</th><td>{{ "%.1f"|format(profile.pct_of_server) }}%</td></tr>
+  <tr><th>Words/message</th><td>{{ "%.1f"|format(profile.words_per_msg) }}</td></tr>
+  <tr><th>Busiest hour</th><td>{{ "%02d:00 UTC"|format(profile.busiest_hour) if profile.busiest_hour is not none else "—" }}</td></tr>
+  <tr><th>Voice time</th><td data-seconds="{{ profile.voice_seconds }}"></td></tr>
+  <tr><th>Reactions given/received</th><td>{{ profile.reactions_given }} / {{ profile.reactions_received }}</td></tr>
+</table>
+<h2>Top channels</h2>
+{% if profile.top_channels %}
+<ul>
+  {% for c in profile.top_channels %}
+  <li>#{{ c.channel.name }} — {{ c.count }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">No channel activity yet.</p>
+{% endif %}
+
 <section class="links"><a href="/me/{{ guild.id }}/leaderboards">Server leaderboards →</a></section>
 {% else %}
 <h1>My stats</h1>
 <p class="empty">You don't share any servers with the bot yet, so there are no stats to show.</p>
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="/static/js/dashboard.js"></script><script>formatVoiceSeconds();</script>{% endblock %}

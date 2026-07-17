@@ -95,6 +95,14 @@ table.stat-table th { color: var(--text-secondary); font-weight: 500; }
 .empty { color: var(--text-muted); }
 .lb-table tr.me td { background: var(--seq-0); font-weight: 600; }
 
+.progress { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: .5rem; }
+.progress-fill { height: 100%; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
+.progress-label { font-size: .8rem; color: var(--text-muted); margin: .3rem 0 0; }
+
+.lb-avatar { width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: .3rem; }
+
+.standing { color: var(--text-secondary); font-weight: 600; margin-bottom: 1rem; }
+
 .badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600; border: 1px solid currentColor; }
 .badge-good { color: var(--good); }
 .badge-critical { color: var(--critical); }
