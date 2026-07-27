@@ -1,7 +1,8 @@
 # Kurisu-web
 
-The design system of the Kurisu-web dashboard — a Flask app serving Discord
-server statistics, leaderboards and moderation history.
+The design system of the Kurisu-web dashboard — a FastAPI app serving Discord
+server statistics, leaderboards and moderation history through Jinja2
+templates.
 
 This project is **published from the app, not authored here.** Every preview
 links `styles.css`, which is a byte-for-byte mirror of

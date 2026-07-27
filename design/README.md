@@ -1,8 +1,8 @@
 # design/
 
 Drop zone for design work headed into `Kurisu-web`. Nothing here is served by
-Flask — it's source material that gets translated into `app/static/css/style.css`
-and `app/templates/`.
+the app — it's source material that gets translated into
+`app/static/css/style.css` and `app/templates/`.
 
 ## Where things go
 
