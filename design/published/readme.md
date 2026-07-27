@@ -17,7 +17,7 @@ the site actually renders, not a re-drawing of it.
 - **Foundations → Layout & scales** — spacing, radius, elevation, the page
   column and its breakpoints.
 - **Components** — buttons and badges, cards and panels, navigation, tables
-  and lists, controls and progress.
+  and lists, controls and progress, loading and error states.
 
 ## Two things that constrain changes
 

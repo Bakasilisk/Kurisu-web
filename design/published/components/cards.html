@@ -1,4 +1,4 @@
-<!-- @dsCard group="Components" name="Cards & panels" subtitle="Stat tiles, bordered panels, server picker cards, login hero" viewport="900x1080" -->
+<!-- @dsCard group="Components" name="Cards & panels" subtitle="Tile hierarchy, status strip, panels, server picker cards, login hero" viewport="900x1560" -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -32,6 +32,50 @@
   <div class="card"><span class="label">Messages today</span><span class="value">7,418</span></div>
 </div>
 <p class="note">These carry most of the "designed" weight on the dashboard: a 3px gradient edge across the top, an uppercase micro-label, and an oversized tabular figure. <code>margin-top: auto</code> pins every value to the bottom of its tile, so a label that wraps to two lines — "Active members (30d)" above — doesn't push its number out of line with the rest of the row. Hover borders in <code>--brand</code> and lifts to <code>--shadow-2</code>.</p>
+
+<div class="demo-head">Tile hierarchy</div>
+<div class="cards">
+  <div class="card card-hero"><span class="label">Total messages</span><span class="value">10,210,553</span></div>
+  <div class="card card-hero"><span class="label">Active members (30d)</span><span class="value">1,904</span></div>
+  <div class="card card-hero">
+    <span class="label">Trend (30d)</span>
+    <span class="value">rising</span>
+    <span class="trend-delta trend-up">+12.4%</span>
+    <span class="caption">48,102 recent vs 42,795 prior</span>
+  </div>
+</div>
+<div class="cards">
+  <div class="card card-sm"><span class="label">Total words</span><span class="value">71,884,205</span></div>
+  <div class="card card-sm"><span class="label">Avg/day</span><span class="value">1,604.8</span></div>
+  <div class="card card-sm"><span class="label">Reactions</span><span class="value">982,410</span></div>
+  <div class="card card-sm"><span class="label">Voice time</span><span class="value">3,204h</span></div>
+  <div class="card card-sm"><span class="label">First activity</span><span class="value">2021-03-14</span></div>
+</div>
+<p class="note">The dashboard opened with eight tiles at one size, which said nothing about which of the eight mattered. <code>.card-hero</code> and <code>.card-sm</code> split them into a row of three and a row of five. Both are modifiers on <code>.card</code>, not new components — they change type scale and padding only, so the gradient edge, the hover lift and the <code>margin-top: auto</code> baseline all still come from one definition.</p>
+<p class="note">Under 640px the hero row drops to a single column via <code>.cards:has(.card-hero)</code>, giving the largest numerals on the page full width instead of squeezing three across. Engines without <code>:has()</code> keep the auto-fit grid — a worse layout, not a broken one, which is why the rule is written as an enhancement rather than a floor.</p>
+<p class="note">The trend delta was a <code>title</code> tooltip: invisible, and unreachable on touch. Now it's text, in the same <code>--good-text</code> / <code>--critical-text</code> pair the badges use, with the sign carried by the <code>%+.1f%%</code> format so direction reads without relying on the color alone.</p>
+
+<div class="demo-head">Status strip</div>
+<section class="status-strip">
+  <div class="status-item">
+    <span class="label">Security mode</span>
+    <span class="badge badge-good">active</span>
+  </div>
+  <div class="status-item">
+    <span class="label">Lockdown</span>
+    <span class="badge badge-good">inactive</span>
+  </div>
+  <div class="status-item">
+    <span class="label">Warnings</span>
+    <span class="value">17</span>
+  </div>
+  <div class="status-item">
+    <span class="label">Disabled cogs</span>
+    <span class="value">2</span>
+  </div>
+</section>
+<p class="note">Sits above moderation's six detail sections and answers "is anything wrong right now" without scrolling. A flatter relative of <code>.card</code> — same surface, border, radius and <code>--shadow-1</code>, but no gradient edge and no hover state, because nothing here is a link.</p>
+<p class="note">Two of the four slots hold a badge and two hold a numeral. That's the point of the shape: state and count sit in one row without a separate component for each. <code>auto-fit, minmax(150px, 1fr)</code> reflows to two-up and then one-up as the column narrows, with no breakpoint of its own.</p>
 
 <div class="demo-head">Panels</div>
 <div class="panel-grid">

@@ -1,4 +1,4 @@
-<!-- @dsCard group="Components" name="Tables & lists" subtitle="Leaderboards, key/value rows, activity heatmap, ranked lists" viewport="900x1180" -->
+<!-- @dsCard group="Components" name="Tables & lists" subtitle="Leaderboards, rank medals, key/value rows, activity heatmap, ranked lists" viewport="900x1320" -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -33,15 +33,25 @@
     <table class="stat-table lb-table">
       <thead><tr><th>Rank</th><th>Member</th><th>Messages</th><th>Level</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td><span class="av"></span><a href="#">okabe</a></td><td>412,880</td><td>92</td></tr>
-        <tr><td>2</td><td><span class="av"></span><a href="#">daru</a></td><td>288,104</td><td>81</td></tr>
-        <tr class="me"><td>3</td><td><span class="av"></span><a href="#">kurisu</a></td><td>274,559</td><td>79</td></tr>
+        <tr><td><span class="rank-medal rank-medal-1">1</span></td><td><span class="av"></span><a href="#">okabe</a></td><td>412,880</td><td>92</td></tr>
+        <tr><td><span class="rank-medal rank-medal-2">2</span></td><td><span class="av"></span><a href="#">daru</a></td><td>288,104</td><td>81</td></tr>
+        <tr class="me"><td><span class="rank-medal rank-medal-3">3</span></td><td><span class="av"></span><a href="#">kurisu</a></td><td>274,559</td><td>79</td></tr>
         <tr><td>4</td><td><span class="av"></span><a href="#">mayuri</a></td><td>190,733</td><td>68</td></tr>
+        <tr><td>5</td><td><span class="av"></span><a href="#">suzuha</a></td><td>142,006</td><td>61</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 <p class="note">Only the ranked leaderboards fill their panel (<code>.lb-table</code> sets <code>width: 100%</code>). The "this is you" row takes <code>--row-highlight</code> at 650 weight with a 3px inset brand bar on the first cell — a token kept independent of the heatmap ramp, so the leaderboard isn't coupled to it. Rows hover to <code>--surface-2</code>.</p>
+
+<div class="demo-head">Rank medals</div>
+<p>
+  <span class="rank-medal rank-medal-1">1</span>
+  <span class="rank-medal rank-medal-2">2</span>
+  <span class="rank-medal rank-medal-3">3</span>
+</p>
+<p class="note">The top three ranks used to be 🥇🥈🥉. Emoji rendered at a different width than the digits below them, so the <code>#</code> column lost its alignment, and each platform drew a different medal. <code>.rank-medal</code> is a <code>1.7em</code> circle holding the real numeral, sized in <code>em</code> so it tracks the table's font size rather than pinning to a pixel value.</p>
+<p class="note">The three gradients are the one place in the stylesheet with hard-coded hex outside the token block, and deliberately so: gold, silver and bronze are literal material references, not brand colors, and they carry the same meaning in both schemes. White text on all three clears AA at the weight they're set in. Rank 4 and below stay bare tabular numerals — medaling everything would flatten the distinction the component exists to make.</p>
 
 <div class="demo-head">Key / value</div>
 <div class="panel" style="max-width:420px">
@@ -70,7 +80,18 @@
     </table>
   </div>
   <p class="caption">Peak 1,204 messages · Thursday 21:00</p>
+  <div class="heat-legend" aria-hidden="true">
+    <span>less</span>
+    <span class="heat-swatch" style="background: var(--seq-0)"></span>
+    <span class="heat-swatch" style="background: var(--seq-1)"></span>
+    <span class="heat-swatch" style="background: var(--seq-2)"></span>
+    <span class="heat-swatch" style="background: var(--seq-3)"></span>
+    <span class="heat-swatch" style="background: var(--seq-4)"></span>
+    <span class="heat-swatch" style="background: var(--seq-5)"></span>
+    <span>more</span>
+  </div>
 </div>
+<p class="note">The legend is built in <code>dashboard.html</code> from the same <code>--seq-0</code>…<code>--seq-5</code> ramp <code>sequentialColor()</code> reads at render time — six swatches, no new color logic, so a change to the ramp moves the map and its key together. It carries <code>aria-hidden="true"</code>: the caption underneath already states the peak in words, which is the part a screen reader needs.</p>
 <p class="note">Rounded, gapped cells rather than a hairline grid — <code>border-spacing: 3px</code> on a separate-borders table, which reads as a contribution graph. 18×18 cells at <code>--radius-sm</code>. The wrapper scrolls horizontally on narrow screens rather than compressing.</p>
 
 <div class="demo-head">Lists</div>

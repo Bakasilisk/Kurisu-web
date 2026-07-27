@@ -1,0 +1,86 @@
+<!-- @dsCard group="Components" name="Loading & error states" subtitle="Per-box skeleton shimmer, inline chart error with retry, charts header" viewport="900x1020" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Loading &amp; error states</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css.
+   The app puts a real <canvas> in .chart-canvas-wrap; these previews use an
+   empty wrap, since a loading box hides its canvas anyway and an errored one
+   covers it. The "loaded" box draws a plain bar row so the three states can
+   be compared at the same size without pulling Chart.js in. */
+.demo { max-width: 860px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+.fake-bars { display: flex; align-items: flex-end; gap: var(--space-3); height: 100%; padding: var(--space-4) 0; }
+.fake-bars i { flex: 1; background: var(--series-1); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Three states, one box</div>
+<section class="charts">
+  <div class="chart-box is-loading">
+    <h2>Top posters</h2>
+    <div class="chart-canvas-wrap"><canvas></canvas></div>
+  </div>
+  <div class="chart-box">
+    <h2>Busiest channels</h2>
+    <div class="chart-canvas-wrap">
+      <div class="fake-bars"><i style="height:82%"></i><i style="height:61%"></i><i style="height:47%"></i><i style="height:33%"></i><i style="height:21%"></i></div>
+    </div>
+  </div>
+  <div class="chart-box">
+    <h2>Voice leaderboard</h2>
+    <div class="chart-canvas-wrap"><canvas></canvas></div>
+    <div class="chart-error">
+      <p>Couldn't load this chart.</p>
+      <button type="button" class="button chart-retry">Retry</button>
+    </div>
+  </div>
+  <div class="chart-box is-loading">
+    <h2>Growth</h2>
+    <div class="chart-canvas-wrap"><canvas></canvas></div>
+  </div>
+</section>
+<p class="note">The dashboard draws four charts from four independent endpoints. Previously one failure blanked all four and left no indication of why; a slow one left an empty rectangle that was indistinguishable from a server with no data. State is now per box, which is why all three appear together above — that is a real arrangement, not a demo contrivance.</p>
+
+<div class="demo-head">Loading</div>
+<p class="note"><code>dashboard.js</code> adds <code>.is-loading</code> to a box before its fetch and clears it on settle. The canvas goes <code>visibility: hidden</code> rather than <code>display: none</code>, so it keeps its box and nothing reflows when the chart lands. The wrap fills with <code>--surface-2</code> at <code>--radius-md</code> and a shimmer sweeps across an <code>::after</code> overlay.</p>
+<p class="note">The shimmer sits inside <code>@media (prefers-reduced-motion: no-preference)</code>, so the static fill is what anyone who asked to avoid motion gets — the fill is the state, and the animation only decorates it. The heatmap uses the same pair of rules through <code>.activity.is-loading</code>, since it is a table rather than a canvas.</p>
+
+<div class="demo-head">Error</div>
+<p class="note"><code>showBoxError()</code> inserts <code>.chart-error</code> as a child of the box, absolutely positioned at <code>inset: 0</code> over <code>--surface-1</code>. This is why <code>.chart-box</code> and <code>.activity</code> carry <code>position: relative</code> — the overlay covers the dead chart rather than displacing it, so a failure doesn't change the height of the grid row.</p>
+<p class="note">Retry is the standard <code>.button</code> with its shadow removed and shrunk one step: inside a failed panel it's a recovery affordance, not the page's primary action. It re-runs only its own box's fetch — the other three keep whatever they already drew.</p>
+
+<div class="demo-head">Charts header</div>
+<div class="charts-header">
+  <h2>Charts</h2>
+  <label class="period-selector">Period, charts only:
+    <select>
+      <option>Week</option>
+      <option selected>Month</option>
+      <option>Year</option>
+      <option>All</option>
+    </select>
+  </label>
+</div>
+<p class="note">The period selector used to sit alone above everything, which read as though it filtered the stat tiles too — it never did. Pairing it with the "Charts" heading on one row makes the scope visual, and the label says it in words as a backstop.</p>
+<p class="note">The <code>&lt;select&gt;</code> is disabled for the duration of a reload and drops to <code>opacity: .6</code> with <code>cursor: not-allowed</code>, so changing period mid-flight can't stack four more fetches on the four already running. Under 640px the header stacks to a column and the selector left-aligns under the heading.</p>
+
+<div class="demo-head">Bounded canvas</div>
+<p class="note"><code>.chart-canvas-wrap</code> is a fixed <code>260px</code> tall, paired with <code>maintainAspectRatio: false</code> in <code>dashboard.js</code>. Left to their natural aspect ratios the four charts came out at four different heights, so the 2-column grid never lined up and the page grew or shrank depending on how many bars a dataset happened to return. The fixed height also gives the skeleton and the error overlay a stable box to fill before any data exists.</p>
+
+</main>
+</body>
+</html>
