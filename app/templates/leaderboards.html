@@ -3,7 +3,12 @@
 {% block content %}
 <h1>Leaderboards — {{ guild.name }}</h1>
 
-<p class="standing">You're {{ ("#" ~ my_leveling_rank) if my_leveling_rank else "Unranked" }} in XP · {{ ("#" ~ my_economy_rank) if my_economy_rank else "Unranked" }} in bits</p>
+<p class="standing">
+  You're {{ ("#" ~ my_leveling_rank) if my_leveling_rank else "Unranked" }} in XP
+  ({{ "{:,}".format(my_xp) }} XP)
+  · {{ ("#" ~ my_economy_rank) if my_economy_rank else "Unranked" }} in bits
+  ({{ "{:,}".format(my_bits) }} bits)
+</p>
 
 <section class="panel-grid">
   <div class="panel">
@@ -13,7 +18,7 @@
       <tr><th>#</th><th>Member</th><th>Level</th><th>XP</th></tr>
       {% for e in leveling %}
       <tr{% if e.user.id == me_id %} class="me"{% endif %}>
-        <td>{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</td>
+        <td>{% if loop.index <= 3 %}<span class="rank-medal rank-medal-{{ loop.index }}">{{ loop.index }}</span>{% else %}{{ loop.index }}{% endif %}</td>
         <td>{% if e.user.avatar %}<img src="{{ e.user.avatar }}" class="lb-avatar" alt="">{% endif %} {{ e.user.name }}</td>
         <td>{{ e.level }}</td>
         <td>{{ "{:,}".format(e.xp) }}</td>
@@ -32,7 +37,7 @@
       <tr><th>#</th><th>Member</th><th>Bits</th><th>Streak</th></tr>
       {% for e in economy %}
       <tr{% if e.user.id == me_id %} class="me"{% endif %}>
-        <td>{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</td>
+        <td>{% if loop.index <= 3 %}<span class="rank-medal rank-medal-{{ loop.index }}">{{ loop.index }}</span>{% else %}{{ loop.index }}{% endif %}</td>
         <td>{% if e.user.avatar %}<img src="{{ e.user.avatar }}" class="lb-avatar" alt="">{% endif %} {{ e.user.name }}</td>
         <td>{{ "{:,}".format(e.bits) }}</td>
         <td>{{ e.streak ~ "d" if e.streak else "—" }}</td>
@@ -44,6 +49,4 @@
     {% endif %}
   </div>
 </section>
-
-<section class="links"><a href="/me/{{ guild.id }}">← My stats</a></section>
 {% endblock %}
