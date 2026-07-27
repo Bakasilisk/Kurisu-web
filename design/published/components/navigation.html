@@ -1,0 +1,54 @@
+<!-- @dsCard group="Components" name="Navigation" subtitle="Sticky topbar, gradient mark, blur-backed surface" viewport="900x420" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Navigation</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css.
+   The topbar is normally position:sticky against the page; here it sits in
+   a bordered frame so the card shows the bar itself rather than an empty
+   scroll region. */
+.frame { border-bottom: 1px solid var(--border); }
+.demo { max-width: 860px; margin: 0 auto; padding: var(--space-5) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-5) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <nav class="topbar">
+    <a href="#" class="brand">Kurisu</a>
+    <a href="#" class="navlink">Dashboard</a>
+    <a href="#" class="navlink">Leaderboards</a>
+    <a href="#" class="navlink">Moderation</a>
+    <span class="user">kurisu</span>
+    <a href="#" class="logout">Log out</a>
+  </nav>
+</div>
+
+<main class="demo">
+<div class="demo-head">Behaviour</div>
+<p class="note">Sticky at <code>top: 0</code> on <code>z-index: 10</code>, over <code>--surface-1</code> with a hairline bottom border. Where <code>backdrop-filter</code> is supported the background drops to 78% via <code>color-mix</code> and picks up a 14px blur at 1.6 saturation, so content reads through it as it scrolls under. The opaque surface is the fallback, declared first — nothing depends on the blur landing.</p>
+
+<div class="demo-head">Structure</div>
+<p class="note">The wordmark takes <code>margin-right: auto</code>, which pushes everything after it to the right edge — so nav links, the current user and the logout link all sit in one right-hand cluster with no wrapper element. Links are <code>--text-secondary</code> at 500 and transition to <code>--brand</code> on hover.</p>
+
+<div class="demo-head">Mark</div>
+<p class="note">The 9×18 pill left of the wordmark is a <code>::before</code> on <code>.brand</code> filled with <code>--brand-grad</code> and lit by <code>--shadow-brand</code>. It gives the nav an anchor without needing an image asset, which keeps the app's no-external-requests policy intact — the only binary in <code>static/vendor</code> is the font and Chart.js.</p>
+
+<div class="demo-head">Narrow</div>
+<p class="note">Under 640px the bar wraps rather than scrolls: <code>flex-wrap</code> turns on, the gap tightens to <code>--space-3</code>, and padding drops to match. The link cluster falls to a second line under the wordmark.</p>
+</main>
+
+</body>
+</html>

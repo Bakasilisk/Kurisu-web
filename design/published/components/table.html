@@ -1,0 +1,99 @@
+<!-- @dsCard group="Components" name="Tables & lists" subtitle="Leaderboards, key/value rows, activity heatmap, ranked lists" viewport="900x1180" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Tables &amp; lists</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css.
+   Heatmap cells use var(--seq-N) inline; the app writes literal colors
+   there from JS, but the var() form is the same ramp and adapts to the
+   viewer's color scheme, which a baked hex could not. */
+.demo { max-width: 860px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+.av { display: inline-block; width: 22px; height: 22px; border-radius: 50%; vertical-align: middle; margin-right: var(--space-2); border: 1px solid var(--border); background: var(--surface-2); }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Leaderboard</div>
+<div class="panel">
+  <h2>Messages — all time</h2>
+  <div class="table-scroll">
+    <table class="stat-table lb-table">
+      <thead><tr><th>Rank</th><th>Member</th><th>Messages</th><th>Level</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><span class="av"></span><a href="#">okabe</a></td><td>412,880</td><td>92</td></tr>
+        <tr><td>2</td><td><span class="av"></span><a href="#">daru</a></td><td>288,104</td><td>81</td></tr>
+        <tr class="me"><td>3</td><td><span class="av"></span><a href="#">kurisu</a></td><td>274,559</td><td>79</td></tr>
+        <tr><td>4</td><td><span class="av"></span><a href="#">mayuri</a></td><td>190,733</td><td>68</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="note">Only the ranked leaderboards fill their panel (<code>.lb-table</code> sets <code>width: 100%</code>). The "this is you" row takes <code>--row-highlight</code> at 650 weight with a 3px inset brand bar on the first cell — a token kept independent of the heatmap ramp, so the leaderboard isn't coupled to it. Rows hover to <code>--surface-2</code>.</p>
+
+<div class="demo-head">Key / value</div>
+<div class="panel" style="max-width:420px">
+  <h2>Member</h2>
+  <table class="stat-table">
+    <tbody>
+      <tr><th>Messages</th><td>274,559</td></tr>
+      <tr><th>Reactions given/received</th><td>8,204 / 11,733</td></tr>
+      <tr><th>First seen</th><td>2021-03-14</td></tr>
+      <tr><th>Status</th><td><span class="badge badge-good">Active</span></td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="note">Key/value tables stay at their natural width — stretched to the full 1100px column, a label and its value drift to opposite edges and stop reading as a pair. Row-header cells drop the uppercase tracking via <code>tr:has(td) &gt; th</code>, since that treatment shouts on a long label like "Reactions given/received". Engines without <code>:has()</code> keep the uppercase form.</p>
+
+<div class="demo-head">Activity heatmap</div>
+<div class="panel" style="max-width:520px">
+  <h2>Activity</h2>
+  <div class="activity">
+    <table class="heatmap">
+      <tbody>
+        <tr><th>M</th><td style="background:var(--seq-0)"></td><td style="background:var(--seq-2)"></td><td style="background:var(--seq-3)"></td><td style="background:var(--seq-5)"></td><td style="background:var(--seq-4)"></td><td style="background:var(--seq-1)"></td><td style="background:var(--seq-0)"></td><td style="background:var(--seq-3)"></td><td style="background:var(--seq-2)"></td><td style="background:var(--seq-4)"></td></tr>
+        <tr><th>W</th><td style="background:var(--seq-1)"></td><td style="background:var(--seq-3)"></td><td style="background:var(--seq-4)"></td><td style="background:var(--seq-4)"></td><td style="background:var(--seq-2)"></td><td style="background:var(--seq-0)"></td><td style="background:var(--seq-1)"></td><td style="background:var(--seq-5)"></td><td style="background:var(--seq-3)"></td><td style="background:var(--seq-2)"></td></tr>
+        <tr><th>F</th><td style="background:var(--seq-2)"></td><td style="background:var(--seq-1)"></td><td style="background:var(--seq-0)"></td><td style="background:var(--seq-3)"></td><td style="background:var(--seq-5)"></td><td style="background:var(--seq-4)"></td><td style="background:var(--seq-2)"></td><td style="background:var(--seq-1)"></td><td style="background:var(--seq-0)"></td><td style="background:var(--seq-3)"></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="caption">Peak 1,204 messages · Thursday 21:00</p>
+</div>
+<p class="note">Rounded, gapped cells rather than a hairline grid — <code>border-spacing: 3px</code> on a separate-borders table, which reads as a contribution graph. 18×18 cells at <code>--radius-sm</code>. The wrapper scrolls horizontally on narrow screens rather than compressing.</p>
+
+<div class="demo-head">Lists</div>
+<div class="panel-grid">
+  <div class="panel">
+    <h2>Top channels</h2>
+    <ul class="stat-list">
+      <li>#general — 412,880</li>
+      <li>#dev — 96,204</li>
+      <li>#offtopic — 51,773</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h2>Quietest members</h2>
+    <ol class="rank-list">
+      <li><a href="#">luka</a> — 12</li>
+      <li><a href="#">moeka</a> — 31</li>
+      <li><a href="#">suzuha</a> — 47</li>
+    </ol>
+  </div>
+</div>
+<p class="note"><code>.stat-list</code> is a bare divided list — no bullets, a hairline between rows, none after the last. <code>.rank-list</code> keeps real <code>&lt;ol&gt;</code> ordinals and is deliberately not a flex container: the numbers are the point of that page, and flex items only render their <code>::marker</code> in newer engines. Markers take <code>--text-muted</code> and tabular figures so the ordinals align.</p>
+
+</main>
+</body>
+</html>

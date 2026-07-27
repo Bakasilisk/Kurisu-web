@@ -1,0 +1,72 @@
+<!-- @dsCard group="Components" name="Cards & panels" subtitle="Stat tiles, bordered panels, server picker cards, login hero" viewport="900x1080" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Cards &amp; panels</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css.
+   The guild icons are inline SVG data URIs so this preview pulls no
+   external assets. */
+.demo { max-width: 860px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Stat tiles</div>
+<div class="cards">
+  <div class="card"><span class="label">Total messages</span><span class="value">10,210,553</span></div>
+  <div class="card"><span class="label">Members</span><span class="value">4,182</span></div>
+  <div class="card"><span class="label">Active members (30d)</span><span class="value">1,904</span></div>
+  <div class="card"><span class="label">Messages today</span><span class="value">7,418</span></div>
+</div>
+<p class="note">These carry most of the "designed" weight on the dashboard: a 3px gradient edge across the top, an uppercase micro-label, and an oversized tabular figure. <code>margin-top: auto</code> pins every value to the bottom of its tile, so a label that wraps to two lines — "Active members (30d)" above — doesn't push its number out of line with the rest of the row. Hover borders in <code>--brand</code> and lifts to <code>--shadow-2</code>.</p>
+
+<div class="demo-head">Panels</div>
+<div class="panel-grid">
+  <div class="panel">
+    <h2>Top channels</h2>
+    <ul class="stat-list">
+      <li>#general — 412,880</li>
+      <li>#dev — 96,204</li>
+      <li>#offtopic — 51,773</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h2>Message volume</h2>
+    <p class="empty">Chart renders here on the dashboard.</p>
+    <p class="caption">Net +1,204 over the period</p>
+  </div>
+</div>
+<p class="note"><code>.panel</code> / <code>.panel-grid</code> are the generic bordered-box grid used by the table pages. <code>.chart-box</code> / <code>.charts</code> are the same shape under a chart-specific name, kept so <code>dashboard.html</code> — the one page that actually draws into them — stays semantically readable. Changing one visually changes both; that is intended, not an oversight.</p>
+
+<div class="demo-head">Server picker</div>
+<ul class="guild-list">
+  <li><a href="#"><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' fill='%2300a5bd'/%3E%3C/svg%3E">Kurisu HQ</a></li>
+  <li><a href="#"><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' fill='%23e34948'/%3E%3C/svg%3E">Lab Notes</a></li>
+  <li><a href="#"><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' fill='%236f6d67'/%3E%3C/svg%3E">Archive</a></li>
+</ul>
+<p class="note">The server cards are the only large click targets in the app, so they get the strongest affordance: a gradient accent edge that wipes in from the top on hover, plus a 2px lift and a brand border. The wipe is a <code>scaleY</code> transform on <code>::before</code>; the lift sits behind <code>prefers-reduced-motion</code>.</p>
+
+<div class="demo-head">Login hero</div>
+<div class="login-card">
+  <h1>Kurisu</h1>
+  <p>Server statistics, leaderboards and moderation history.</p>
+  <a href="#" class="button">Sign in with Discord</a>
+</div>
+<p class="note">The one place the brand runs at display size, with <code>--brand-grad</code> clipped to the text. The clip is guarded by <code>@supports</code> — without it, an unsupporting engine paints transparent text on nothing. Error pages reuse this card but drop the gradient wordmark and fall back to <code>--text-primary</code> at a smaller size: at 2.9rem in brand color, a 403 reads like an announcement.</p>
+
+</main>
+</body>
+</html>

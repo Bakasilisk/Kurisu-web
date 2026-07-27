@@ -1,0 +1,69 @@
+<!-- @dsCard group="Components" name="Controls & progress" subtitle="Period selector, XP progress bar, empty state" viewport="680x620" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Controls &amp; progress</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css. */
+.demo { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 64ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Period selector</div>
+<div class="period-selector">
+  <label for="period">Period</label>
+  <select id="period">
+    <option>Last 7 days</option>
+    <option selected>Last 30 days</option>
+    <option>Last 90 days</option>
+    <option>All time</option>
+  </select>
+</div>
+<p class="note">The only form control in the app. A native <code>&lt;select&gt;</code> with <code>font: inherit</code>, sitting on <code>--surface-1</code> inside a <code>--radius-md</code> border — the one place that radius is used. The border transitions to <code>--brand</code> on hover; focus is the global ring. The chevron stays the platform's own, so it matches the user's OS rather than needing a background image.</p>
+
+<div class="demo-head">Progress</div>
+<div class="panel">
+  <h2>Level 79</h2>
+  <div class="progress"><div class="progress-fill" style="width:64%"></div></div>
+  <p class="progress-label">18,204 / 28,400 XP to level 80</p>
+</div>
+<p class="note">A 10px track on <code>--surface-2</code> with a hairline border, filled with <code>--brand-grad</code> and pill-rounded at both ends. The width transition runs 400ms on a standard ease curve, wrapped in <code>prefers-reduced-motion: no-preference</code> so it snaps instead of sliding when motion is suppressed. <code>.progress-label</code> annotates the bar in tabular figures — distinct from <code>.caption</code>, which annotates charts.</p>
+
+<div class="demo-head">Empty state</div>
+<div class="panel">
+  <h2>Warnings</h2>
+  <p class="empty">No warnings on record.</p>
+</div>
+<p class="note">One class, <code>.empty</code> — muted text at <code>.9rem</code>. No illustration, no bordered dashed box, no call to action. Empty panels are common and unremarkable in this app; dressing them up would give absence more weight than the data.</p>
+
+<div class="demo-head">Nested warning list</div>
+<div class="panel" style="max-width:460px">
+  <table class="stat-table">
+    <tbody>
+      <tr><th>Warnings</th><td>
+        <ul class="warn-list">
+          <li>Spam in #general — 2024-11-02</li>
+          <li>Link posting — 2025-01-18</li>
+        </ul>
+      </td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="note">A list nested inside a table cell needs its indent reset — without <code>padding-left: var(--space-4)</code> it inherits the browser's 40px bullet indent and detaches from the cell. Markers take <code>--brand</code>.</p>
+
+</main>
+</body>
+</html>

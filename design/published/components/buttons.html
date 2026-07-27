@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" name="Buttons & badges" subtitle="Gradient pill button, three badge tones, focus ring" viewport="680x560" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Buttons &amp; badges</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css. */
+.demo { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 64ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Button</div>
+<div class="row">
+  <a href="#" class="button">Sign in with Discord</a>
+  <button type="button" class="button">Refresh</button>
+</div>
+<p class="note">One button, one treatment — a gradient pill on <code>--brand-grad</code> with white text and <code>--shadow-brand</code> beneath it. There is no secondary or ghost variant, because the app never puts two actions side by side: the only buttons are the login CTA and the error-page return link. Hover brightens 6% and deepens the glow; active drops 1px and collapses the shadow to <code>--shadow-1</code>.</p>
+
+<div class="demo-head">Badges</div>
+<div class="row">
+  <span class="badge badge-good">Active</span>
+  <span class="badge badge-critical">Banned</span>
+  <span class="badge badge-neutral">Inactive</span>
+</div>
+<p class="note">Outlined rather than filled — <code>border: 1px solid currentColor</code>, so each variant only sets a text color and the border follows. Badges sit inside dense table rows, where a solid fill would compete with the row-hover and "this is you" highlights.</p>
+<p class="note">The critical badge takes <code>--critical-text</code>, not <code>--critical</code>. The chart fill <code>#d03b3b</code> measures only 3.6:1 on the dark surface, so badge text steps to the lighter red that dark <code>--series-6</code> already establishes. Same split on the good side: <code>--good</code> fills charts, <code>--good-text</code> sets type.</p>
+
+<div class="demo-head">Focus</div>
+<div class="row">
+  <a href="#" class="button" style="outline:2px solid var(--brand);outline-offset:3px;border-radius:var(--radius-sm)">Focused (simulated)</a>
+</div>
+<p class="note">A single global <code>:focus-visible</code> rule covers every interactive element — 2px in <code>--brand</code>, offset 3px, on a <code>--radius-sm</code> corner. Nothing opts out, and no element removes the outline without replacing it.</p>
+
+<div class="demo-head">Links</div>
+<p class="note" style="max-width:none">
+  Inline links inside tables and lists — <a href="#">member name</a> — take <code>--accent</code> at 550 weight with no underline until hover. The rule is scoped to <code>.links</code>, <code>.stat-table</code>, <code>.rank-list</code> and <code>.stat-list</code> rather than bare <code>a</code>, but without it those links fall back to the browser default blue, which is close to unreadable on the dark surface.
+</p>
+
+</main>
+</body>
+</html>
