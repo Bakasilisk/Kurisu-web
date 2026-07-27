@@ -4,8 +4,8 @@
 <h1>{{ profile.user.name }}</h1>
 {% if profile.user.avatar %}<img src="{{ profile.user.avatar }}" class="avatar" alt="">{% endif %}
 
-<section class="charts">
-  <div class="chart-box">
+<section class="panel-grid">
+  <div class="panel">
     <h2>Leveling</h2>
     {% if profile.leveling.xp or profile.leveling.rank %}
     <table class="stat-table">
@@ -22,7 +22,7 @@
     {% endif %}
   </div>
 
-  <div class="chart-box">
+  <div class="panel">
     <h2>Economy</h2>
     {% if profile.economy.bits or profile.economy.rank %}
     <table class="stat-table">
@@ -37,6 +37,7 @@
 </section>
 
 <h2>Activity</h2>
+<div class="table-scroll">
 <table class="stat-table">
   <tr><th>Total messages</th><td>{{ "{:,}".format(profile.total_messages) }}</td></tr>
   <tr><th>Total words</th><td>{{ "{:,}".format(profile.total_words) }}</td></tr>
@@ -49,8 +50,9 @@
   <tr><th>Voice time</th><td data-seconds="{{ profile.voice_seconds }}"></td></tr>
   <tr><th>Reactions given/received</th><td>{{ profile.reactions_given }} / {{ profile.reactions_received }}</td></tr>
 </table>
+</div>
 <h2>Top channels</h2>
-<ul>
+<ul class="stat-list">
   {% for c in profile.top_channels %}
   <li>#{{ c.channel.name }} — {{ c.count }}</li>
   {% endfor %}

@@ -3,9 +3,10 @@
 {% block content %}
 <h1>Moderation &amp; security — {{ guild.name }}</h1>
 
-<section>
+<section class="section">
   <h2>Warnings</h2>
   {% if warnings %}
+  <div class="table-scroll">
   <table class="stat-table">
     <tr><th>Member</th><th>Count</th><th>Warnings</th></tr>
     {% for e in warnings %}
@@ -13,7 +14,7 @@
       <td><a href="/guild/{{ guild.id }}/member/{{ e.user.id }}">{{ e.user.name }}</a></td>
       <td>{{ e.count }}</td>
       <td>
-        <ul>
+        <ul class="warn-list">
           {% for w in e.warnings %}
           <li>{{ w.reason }} — {{ w.moderator.name if w.moderator else "Unknown" }} — {{ w.timestamp }}</li>
           {% endfor %}
@@ -22,12 +23,13 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% else %}
   <p class="empty">No warnings recorded.</p>
   {% endif %}
 </section>
 
-<section>
+<section class="section">
   <h2>Moderation</h2>
   <table class="stat-table">
     <tr><th>Mod-log channel</th><td>{{ ("#" ~ moderation.mod_log_channel.name) if moderation.mod_log_channel else "not set" }}</td></tr>
@@ -35,7 +37,7 @@
   </table>
 </section>
 
-<section>
+<section class="section">
   <h2>Security</h2>
   <section class="cards">
     <div class="card">
@@ -59,7 +61,7 @@
   <p class="empty">Log channel: {{ ("#" ~ security.log_channel.name) if security.log_channel else "not set" }}</p>
 </section>
 
-<section>
+<section class="section">
   <h2>Verification</h2>
   <table class="stat-table">
     <tr><th>Granter role</th><td>{{ verification.granter_role.name if verification.granter_role else "not set" }}</td></tr>
@@ -69,7 +71,7 @@
   </table>
 </section>
 
-<section>
+<section class="section">
   <h2>Palantir</h2>
   <p class="empty">Configuration and cached-message count only — no message content is exposed.</p>
   <table class="stat-table">
@@ -80,8 +82,9 @@
   </table>
 </section>
 
-<section>
+<section class="section">
   <h2>Features</h2>
+  <div class="table-scroll">
   <table class="stat-table">
     <tr><th>Cog</th><th>Status</th></tr>
     {% for cog in features %}
@@ -91,6 +94,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
 </section>
 
 <section class="links"><a href="/guild/{{ guild.id }}">← Dashboard</a></section>

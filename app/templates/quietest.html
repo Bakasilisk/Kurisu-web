@@ -2,9 +2,13 @@
 {% block title %}Quietest — {{ guild.name }}{% endblock %}
 {% block content %}
 <h1>Quietest members — {{ guild.name }}</h1>
-<ol>
+<ol class="rank-list">
   {% for e in data.entries %}
   <li><a href="/guild/{{ guild.id }}/member/{{ e.user.id }}">{{ e.user.name }}</a> — {{ e.count }} messages</li>
+  {% else %}
+  <li class="empty">No members yet.</li>
   {% endfor %}
 </ol>
+
+<section class="links"><a href="/guild/{{ guild.id }}">← Dashboard</a></section>
 {% endblock %}
