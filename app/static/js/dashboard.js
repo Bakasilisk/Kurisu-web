@@ -49,6 +49,7 @@ function renderBarChart(canvasId, key, labels, data, label, colors) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: axis.color }, grid: { display: false } },
@@ -76,6 +77,7 @@ function renderGrowthChart(growth) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: axis.color }, grid: { display: false } },
@@ -143,28 +145,92 @@ function renderHeatmap(container, activity) {
 // large guild doesn't ship its full member list just to draw a 10-bar chart.
 const TOP_N = 10;
 
+// One entry per independently-loadable dashboard box: which DOM box holds
+// it, how to fetch it, and how to render a successful response. Driving
+// Promise.allSettled off this list (rather than one big Promise.all) means
+// one dead endpoint leaves the other boxes' charts intact instead of
+// blanking all four — see plan item 4.
+function dashboardBoxes(gid, period) {
+  return [
+    {
+      key: "top",
+      box: document.getElementById("chart-top").closest(".chart-box"),
+      fetch: () => fetchJSON(`/guild/${gid}/data/top?period=${period}&limit=${TOP_N}`),
+      render: (data) => {
+        const entries = data.entries;
+        renderBarChart("chart-top", "top", entries.map((e) => e.user.name), entries.map((e) => e.count), "Messages");
+      },
+    },
+    {
+      key: "channels",
+      box: document.getElementById("chart-channels").closest(".chart-box"),
+      fetch: () => fetchJSON(`/guild/${gid}/data/channels?period=${period}&limit=${TOP_N}`),
+      render: (data) => {
+        const entries = data.entries;
+        renderBarChart("chart-channels", "channels", entries.map((e) => e.channel.name), entries.map((e) => e.count), "Messages");
+      },
+    },
+    {
+      key: "voice",
+      box: document.getElementById("chart-voice").closest(".chart-box"),
+      fetch: () => fetchJSON(`/guild/${gid}/data/voice?period=${period}&limit=${TOP_N}`),
+      render: (data) => {
+        const entries = data.entries;
+        renderBarChart(
+          "chart-voice", "voice", entries.map((e) => e.user.name), entries.map((e) => Math.round(e.seconds / 60)), "Minutes"
+        );
+      },
+    },
+    {
+      key: "growth",
+      box: document.getElementById("chart-growth").closest(".chart-box"),
+      fetch: () => fetchJSON(`/guild/${gid}/data/growth?period=${period}`),
+      render: (data) => renderGrowthChart(data),
+    },
+    {
+      key: "activity",
+      box: document.getElementById("activity-heatmap").closest(".activity"),
+      fetch: () => fetchJSON(`/guild/${gid}/data/activity?period=${period}`),
+      render: (data) => renderHeatmap(document.getElementById("activity-heatmap"), data),
+    },
+  ];
+}
+
+function clearBoxState(box) {
+  box.classList.remove("is-loading");
+  const err = box.querySelector(".chart-error");
+  if (err) err.remove();
+}
+
+function showBoxError(box, entry) {
+  clearBoxState(box);
+  const err = document.createElement("div");
+  err.className = "chart-error";
+  err.innerHTML = `<p>Couldn't load this chart.</p><button type="button" class="button chart-retry">Retry</button>`;
+  err.querySelector(".chart-retry").addEventListener("click", () => loadOne(entry));
+  box.appendChild(err);
+}
+
+async function loadOne(entry) {
+  entry.box.classList.add("is-loading");
+  const existingErr = entry.box.querySelector(".chart-error");
+  if (existingErr) existingErr.remove();
+  try {
+    const data = await entry.fetch();
+    clearBoxState(entry.box);
+    entry.render(data);
+  } catch (e) {
+    showBoxError(entry.box, entry);
+  }
+}
+
 async function loadDashboardData(gid, period) {
-  const [top, channels, voice, growth, activity] = await Promise.all([
-    fetchJSON(`/guild/${gid}/data/top?period=${period}&limit=${TOP_N}`),
-    fetchJSON(`/guild/${gid}/data/channels?period=${period}&limit=${TOP_N}`),
-    fetchJSON(`/guild/${gid}/data/voice?period=${period}&limit=${TOP_N}`),
-    fetchJSON(`/guild/${gid}/data/growth?period=${period}`),
-    fetchJSON(`/guild/${gid}/data/activity?period=${period}`),
-  ]);
-
-  const topN = top.entries;
-  renderBarChart("chart-top", "top", topN.map((e) => e.user.name), topN.map((e) => e.count), "Messages");
-
-  const chN = channels.entries;
-  renderBarChart("chart-channels", "channels", chN.map((e) => e.channel.name), chN.map((e) => e.count), "Messages");
-
-  const voiceN = voice.entries;
-  renderBarChart(
-    "chart-voice", "voice", voiceN.map((e) => e.user.name), voiceN.map((e) => Math.round(e.seconds / 60)), "Minutes"
-  );
-
-  renderGrowthChart(growth);
-  renderHeatmap(document.getElementById("activity-heatmap"), activity);
+  const select = document.getElementById("period-select");
+  if (select) select.disabled = true;
+  const entries = dashboardBoxes(gid, period);
+  const results = await Promise.allSettled(entries.map((entry) => loadOne(entry)));
+  if (select) select.disabled = false;
+  return results;
 }
 
 function initDashboard(gid) {
