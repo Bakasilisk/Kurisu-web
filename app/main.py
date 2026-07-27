@@ -91,12 +91,6 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     # would break every chart for anyone whose access lapsed mid-session.
     if "/data/" in request.url.path:
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
-    try:
-        user = request.session.get("user")
-    except Exception:
-        # Defensive: request.session raises if SessionMiddleware isn't
-        # installed on the request's scope for some reason.
-        user = None
     # exc.detail is internal wording ("forbidden") — fine as an API payload,
     # too terse to show a signed-in user, so map it to a friendly pair.
     heading, message = _ERROR_TEXT.get(
@@ -104,7 +98,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     )
     return templates.TemplateResponse(
         request, "error.html",
-        {"heading": heading, "message": message, "user": user},
+        _page_ctx(request, heading=heading, message=message),
         status_code=exc.status_code,
     )
 
@@ -130,16 +124,59 @@ def _require_member(request: Request, gid: str) -> RedirectResponse | None:
     return None
 
 
-async def _guild_meta(bot_api, gid: str) -> dict:
+async def _guild_nav(bot_api, request: Request, gid: str) -> tuple[dict, list[dict]]:
+    """Current guild + the switcher list, from ONE guilds() call. Replaces
+    _guild_meta, which fetched this same list and discarded all but one entry.
+
+    Each switcher entry also carries an `href`: /guild/{id} when the user has
+    admin access to that guild, else /me/{id}. Without this, a switcher built
+    from the plain guild list can't tell which tree to land a click in —
+    picking wrong would link a member-only user into an admin route they'd
+    get a 403 on, which the nav must never do (see plan's hard constraints)."""
     guilds = await bot_api.guilds()
-    return next((g for g in guilds if g["id"] == gid), {"id": gid, "name": "Unknown", "icon": None})
+    current = next((g for g in guilds if g["id"] == gid), {"id": gid, "name": "Unknown", "icon": None})
+    admin_ids = set(request.session.get("accessible_guild_ids", []))
+    member_ids = set(request.session.get("member_guild_ids", []))
+    allowed = admin_ids | member_ids
+    switcher = []
+    for g in guilds:
+        if g["id"] in allowed:
+            entry = dict(g)
+            entry["href"] = f"/guild/{g['id']}" if g["id"] in admin_ids else f"/me/{g['id']}"
+            switcher.append(entry)
+    return current, switcher
+
+
+def _page_ctx(request: Request, *, gid: str | None = None, guild: dict | None = None,
+              nav_active: str | None = None, switcher=(), **extra) -> dict:
+    """Shared template context: session user, current guild, active tab, and
+    which tabs this user may see. Both flags reuse authz's session-cached sets,
+    so this adds no bot-API round-trip."""
+    try:
+        user = request.session.get("user")
+    except Exception:
+        # Defensive: request.session raises if SessionMiddleware isn't
+        # installed on the request's scope for some reason — this mirrors
+        # the same guard the exception handler used to have inline, since
+        # that handler is now one of this helper's callers.
+        user = None
+    ctx = {
+        "user": user,
+        "guild": guild,
+        "nav_active": nav_active,
+        "switcher": switcher,
+        "can_admin": authz.check_guild_access(request, gid) if gid else False,
+        "can_member": authz.check_member_access(request, gid) if gid else False,
+    }
+    ctx.update(extra)
+    return ctx
 
 
 @app.get("/")
 async def index(request: Request):
     user = request.session.get("user")
     if user is None:
-        return templates.TemplateResponse(request, "login.html")
+        return templates.TemplateResponse(request, "login.html", _page_ctx(request))
     allowed_ids = set(request.session.get("accessible_guild_ids", []))
     bot_guilds = await request.app.state.bot_api.guilds()
     guilds = [g for g in bot_guilds if g["id"] in allowed_ids]
@@ -147,7 +184,7 @@ async def index(request: Request):
     # their own economy/leveling self-view rather than an empty admin picker.
     if not guilds and request.session.get("member_guild_ids"):
         return RedirectResponse("/me")
-    return templates.TemplateResponse(request, "picker.html", {"user": user, "guilds": guilds})
+    return templates.TemplateResponse(request, "picker.html", _page_ctx(request, guilds=guilds))
 
 
 @app.get("/login")
@@ -159,7 +196,7 @@ async def login(request: Request):
 
 def _login_error(request: Request, message: str, status_code: int = 400) -> Response:
     return templates.TemplateResponse(
-        request, "error.html", {"message": message}, status_code=status_code
+        request, "error.html", _page_ctx(request, message=message), status_code=status_code
     )
 
 
@@ -240,7 +277,7 @@ async def my_stats(request: Request):
             # down — the reminders card is just hidden (None, not []).
             reminders = None
         return templates.TemplateResponse(
-            request, "me.html", {"user": request.session.get("user"), "reminders": reminders}
+            request, "me.html", _page_ctx(request, nav_active="me", reminders=reminders)
         )
     if len(member_ids) == 1:
         return RedirectResponse(f"/me/{member_ids[0]}")
@@ -248,7 +285,7 @@ async def my_stats(request: Request):
     member_set = set(member_ids)
     guilds = [g for g in bot_guilds if g["id"] in member_set]
     return templates.TemplateResponse(
-        request, "me_picker.html", {"user": request.session.get("user"), "guilds": guilds}
+        request, "me_picker.html", _page_ctx(request, guilds=guilds)
     )
 
 
@@ -269,14 +306,14 @@ async def my_stats_guild(request: Request, gid: str):
         reminders = (await bot_api.user_reminders(uid)).get("reminders", [])
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
-    guild = await _guild_meta(bot_api, gid)
+    guild, switcher = await _guild_nav(bot_api, request, gid)
     level_progress = _level_progress(profile["leveling"]["xp"], profile["leveling"]["level"])
     return templates.TemplateResponse(
         request, "me.html",
-        {
-            "user": request.session.get("user"), "guild": guild, "profile": profile,
-            "level_progress": level_progress, "reminders": reminders,
-        },
+        _page_ctx(
+            request, gid=gid, guild=guild, nav_active="me", switcher=switcher,
+            profile=profile, level_progress=level_progress, reminders=reminders,
+        ),
     )
 
 
@@ -300,20 +337,19 @@ async def leaderboards(request: Request, gid: str):
         me = await bot_api.member(gid, uid)
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
-    guild = await _guild_meta(bot_api, gid)
+    guild, switcher = await _guild_nav(bot_api, request, gid)
     return templates.TemplateResponse(
         request, "leaderboards.html",
-        {
-            "user": request.session.get("user"),
-            "guild": guild,
-            "leveling": leveling.get("entries", []),
-            "economy": economy.get("entries", []),
-            "me_id": uid,
-            "my_leveling_rank": me["leveling"]["rank"],
-            "my_economy_rank": me["economy"]["rank"],
-            "my_xp": me["leveling"]["xp"],
-            "my_bits": me["economy"]["bits"],
-        },
+        _page_ctx(
+            request, gid=gid, guild=guild, nav_active="leaderboards", switcher=switcher,
+            leveling=leveling.get("entries", []),
+            economy=economy.get("entries", []),
+            me_id=uid,
+            my_leveling_rank=me["leveling"]["rank"],
+            my_economy_rank=me["economy"]["rank"],
+            my_xp=me["leveling"]["xp"],
+            my_bits=me["economy"]["bits"],
+        ),
     )
 
 
@@ -327,10 +363,10 @@ async def guild_dashboard(request: Request, gid: str):
         overview = await bot_api.overview(gid)
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
-    guild = await _guild_meta(bot_api, gid)
+    guild, switcher = await _guild_nav(bot_api, request, gid)
     return templates.TemplateResponse(
         request, "dashboard.html",
-        {"user": request.session.get("user"), "guild": guild, "overview": overview},
+        _page_ctx(request, gid=gid, guild=guild, nav_active="overview", switcher=switcher, overview=overview),
     )
 
 
@@ -392,12 +428,14 @@ async def member_profile(request: Request, gid: str, uid: str):
         profile = await bot_api.member(gid, uid)
     except BotAPIError:
         raise HTTPException(status_code=404, detail="member not found")
-    guild = await _guild_meta(bot_api, gid)
+    guild, switcher = await _guild_nav(bot_api, request, gid)
     level_progress = _level_progress(profile["leveling"]["xp"], profile["leveling"]["level"])
     return templates.TemplateResponse(
         request, "member.html",
-        {"user": request.session.get("user"), "guild": guild, "profile": profile,
-         "level_progress": level_progress},
+        _page_ctx(
+            request, gid=gid, guild=guild, nav_active="member", switcher=switcher,
+            profile=profile, level_progress=level_progress,
+        ),
     )
 
 
@@ -408,10 +446,10 @@ async def quietest_page(request: Request, gid: str):
         return redirect
     bot_api = request.app.state.bot_api
     data = await bot_api.quietest(gid, limit=25)
-    guild = await _guild_meta(bot_api, gid)
+    guild, switcher = await _guild_nav(bot_api, request, gid)
     return templates.TemplateResponse(
         request, "quietest.html",
-        {"user": request.session.get("user"), "guild": guild, "data": data},
+        _page_ctx(request, gid=gid, guild=guild, nav_active="quietest", switcher=switcher, data=data),
     )
 
 
@@ -432,17 +470,16 @@ async def moderation_page(request: Request, gid: str):
         )
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
-    guild = await _guild_meta(bot_api, gid)
+    guild, switcher = await _guild_nav(bot_api, request, gid)
     return templates.TemplateResponse(
         request, "moderation.html",
-        {
-            "user": request.session.get("user"),
-            "guild": guild,
-            "warnings": warnings.get("entries", []),
-            "security": security,
-            "verification": verification,
-            "palantir": palantir,
-            "moderation": moderation,
-            "features": features.get("cogs", []),
-        },
+        _page_ctx(
+            request, gid=gid, guild=guild, nav_active="moderation", switcher=switcher,
+            warnings=warnings.get("entries", []),
+            security=security,
+            verification=verification,
+            palantir=palantir,
+            moderation=moderation,
+            features=features.get("cogs", []),
+        ),
     )
