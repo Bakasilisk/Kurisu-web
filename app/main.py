@@ -24,6 +24,7 @@ from fastapi import FastAPI, HTTPException, Request, Response  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
 from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
 from app import auth, authz  # noqa: E402
@@ -73,6 +74,39 @@ app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, https_only=True
 BASE_DIR = os.path.dirname(__file__)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+_ERROR_TEXT = {
+    403: ("You don't have access to this server",
+          "Ask a server admin if you think you should."),
+    404: ("Not found", "That page or member doesn't exist."),
+    502: ("The bot is unreachable right now",
+          "It may be restarting — try again in a moment."),
+}
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    # The six /guild/{gid}/data/* endpoints are fetched by dashboard.js via
+    # Promise.all and must always get JSON back — an HTML error page here
+    # would break every chart for anyone whose access lapsed mid-session.
+    if "/data/" in request.url.path:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    try:
+        user = request.session.get("user")
+    except Exception:
+        # Defensive: request.session raises if SessionMiddleware isn't
+        # installed on the request's scope for some reason.
+        user = None
+    # exc.detail is internal wording ("forbidden") — fine as an API payload,
+    # too terse to show a signed-in user, so map it to a friendly pair.
+    heading, message = _ERROR_TEXT.get(
+        exc.status_code, ("Something went wrong", exc.detail)
+    )
+    return templates.TemplateResponse(
+        request, "error.html",
+        {"heading": heading, "message": message, "user": user},
+        status_code=exc.status_code,
+    )
 
 
 def _require_access(request: Request, gid: str) -> RedirectResponse | None:

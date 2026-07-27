@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="login-card">
-  <h1>Login failed</h1>
+  <h1>{{ heading or "Login failed" }}</h1>
   <p>{{ message }}</p>
   <a class="button" href="/">Back to start</a>
 </div>

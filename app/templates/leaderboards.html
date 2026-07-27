@@ -5,8 +5,8 @@
 
 <p class="standing">You're {{ ("#" ~ my_leveling_rank) if my_leveling_rank else "Unranked" }} in XP · {{ ("#" ~ my_economy_rank) if my_economy_rank else "Unranked" }} in bits</p>
 
-<section class="charts">
-  <div class="chart-box">
+<section class="panel-grid">
+  <div class="panel">
     <h2>Leveling</h2>
     {% if leveling %}
     <table class="stat-table lb-table">
@@ -25,7 +25,7 @@
     {% endif %}
   </div>
 
-  <div class="chart-box">
+  <div class="panel">
     <h2>Economy</h2>
     {% if economy %}
     <table class="stat-table lb-table">

@@ -4,10 +4,6 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-function isDark() {
-  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
 function formatVoiceSeconds() {
   document.querySelectorAll("[data-seconds]").forEach((el) => {
     const s = parseInt(el.dataset.seconds, 10) || 0;

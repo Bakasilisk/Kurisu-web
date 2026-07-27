@@ -1,20 +1,30 @@
-/* Design tokens — from the dataviz skill's reference palette (references/palette.md).
-   Light/dark are both selected instances (not an automatic filter-flip). */
+/* =====================================================================
+   Tokens
+   Design tokens — from the dataviz skill's reference palette (references/
+   palette.md). Light/dark are both selected instances (not an automatic
+   filter-flip).
+
+   IMPORTANT: --text-secondary, --border, --series-1, --series-6, --good,
+   --critical, and --seq-0..--seq-5 are read by app/static/js/dashboard.js
+   via getComputedStyle at chart-render time. Keep their names exact, and
+   keep --seq-0..--seq-5 as 6-digit hex literals — hexToRgb() there does
+   parseInt(hex.replace("#",""), 16), so rgb()/oklch()/color-mix()/3-digit
+   shorthand would all break the heatmap.
+   ===================================================================== */
 :root {
   color-scheme: light dark;
   --page: #f9f9f7;
   --surface-1: #fcfcfb;
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
-  --text-muted: #898781;
+  --text-muted: #6f6d67;
   --border: #e1e0d9;
-  --baseline: #c3c2b7;
 
   /* categorical slot 1 (blue) — the single-series bar charts */
   --series-1: #2a78d6;
   /* categorical slot 6 (red) — "leaves" in the growth chart */
   --series-6: #e34948;
-  /* status colors — reserved for the signed "net" bar only */
+  /* status colors — reserved for the signed "net" bar / chart fills only */
   --good: #0ca30c;
   --critical: #d03b3b;
 
@@ -25,6 +35,32 @@
   --seq-3: #3987e5;
   --seq-4: #1c5cab;
   --seq-5: #0d366b;
+
+  /* text-only counterparts to --series-1 / --good / --critical: those three
+     are tuned as chart *fill* colors and consumed by dashboard.js, so they
+     can't be retuned for text contrast without also shifting the charts.
+     These are free of that constraint. --critical happens to pass AA on the
+     light surface, so it's the same value here; the dark block differs. */
+  --accent: #2265b8;
+  --good-text: #0a7a0a;
+  --critical-text: #d03b3b;
+
+  /* highlight for "this is you" table rows — kept independent of the
+     heatmap ramp (--seq-0) so the leaderboard isn't coupled to it */
+  --row-highlight: #e8f0fb;
+
+  /* spacing scale */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.5rem;
+
+  /* radius scale */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-pill: 999px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,7 +71,6 @@
     --text-secondary: #c3c2b7;
     --text-muted: #898781;
     --border: #2c2c2a;
-    --baseline: #383835;
 
     --series-1: #3987e5;
     --series-6: #e66767;
@@ -50,60 +85,413 @@
     --seq-3: #256abf;
     --seq-4: #3987e5;
     --seq-5: #6da7ec;
+
+    /* --series-1 already passes AA in dark mode, so accent just reuses it.
+       --critical (#d03b3b) does NOT — only 3.6:1 on --surface-1 — so badge
+       text uses the lighter red that dark --series-6 already establishes. */
+    --accent: #3987e5;
+    --good-text: #0ca30c;
+    --critical-text: #e66767;
+
+    --row-highlight: #1b2f47;
   }
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); }
-.topbar { display: flex; align-items: center; gap: 1rem; padding: .75rem 1.5rem; background: var(--surface-1); border-bottom: 1px solid var(--border); }
-.topbar .brand { font-weight: 700; color: var(--series-1); text-decoration: none; margin-right: auto; }
-.topbar .user { color: var(--text-secondary); }
-.topbar .navlink { color: var(--text-secondary); text-decoration: none; }
-.topbar .logout { color: var(--text-secondary); text-decoration: none; }
-main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; overflow-x: auto; }
-h1, h2 { color: var(--text-primary); }
-.login-card { text-align: center; margin-top: 4rem; }
-.login-card p { color: var(--text-secondary); }
-.button, a.button { display: inline-block; background: var(--series-1); color: #fff; padding: .6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 600; }
+/* =====================================================================
+   Reset & base
+   ===================================================================== */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--page);
+  color: var(--text-primary);
+}
 
-.guild-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 1rem; }
-.guild-list a { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--text-primary); }
-.guild-icon { width: 32px; height: 32px; border-radius: 50%; }
+/* =====================================================================
+   Layout
+   ===================================================================== */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+/* Wrapper for any table wider than its container — scrolls the table, not
+   the page. Keep `main`'s own overflow-x unset so a stray wide element
+   elsewhere can't drag the whole page sideways again. */
+.table-scroll {
+  overflow-x: auto;
+}
+.activity {
+  overflow-x: auto;
+}
 
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: .25rem; }
-.card .label { font-size: .8rem; color: var(--text-muted); }
-.card .value { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* =====================================================================
+   Typography
+   ===================================================================== */
+h1, h2 {
+  color: var(--text-primary);
+}
+/* Chart captions (growth net total, heatmap peak) — distinct from
+   .progress-label, which annotates an actual progress bar. */
+.caption {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
+.standing {
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
 
-.period-selector { margin-bottom: 1rem; color: var(--text-secondary); }
-.period-selector select { background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; padding: .3rem .5rem; }
+/* =====================================================================
+   Nav
+   ===================================================================== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .brand {
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  margin-right: auto;
+}
+.topbar .user {
+  color: var(--text-secondary);
+}
+.topbar .navlink {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.topbar .logout {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
 
-.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px,1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
-.chart-box { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
-.chart-box h2 { margin-top: 0; font-size: 1rem; color: var(--text-secondary); }
+/* =====================================================================
+   Panels & cards
+   ===================================================================== */
+/* .panel / .panel-grid are the generic bordered-box grid used by table
+   pages (leaderboards, me, member). .chart-box / .charts are the same
+   shape under a chart-specific name, kept so dashboard.html — the one
+   page that actually draws charts into them — stays semantically
+   readable. Changing one visually changes both; that's intended. */
+.panel, .chart-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.panel h2, .chart-box h2 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+.panel-grid, .charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
 
-.activity { overflow-x: auto; }
-table.heatmap { border-collapse: collapse; font-size: .65rem; color: var(--text-muted); }
-table.heatmap th, table.heatmap td { width: 20px; height: 20px; text-align: center; border: 1px solid var(--border); }
+.guild-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.guild-list a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: border-color .15s ease, transform .15s ease;
+}
+.guild-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
 
-table.stat-table { border-collapse: collapse; }
-table.stat-table th, table.stat-table td { text-align: left; padding: .4rem .8rem; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
-table.stat-table th { color: var(--text-secondary); font-weight: 500; }
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  transition: border-color .15s ease;
+}
+.card .label {
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+.card .value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 
-.avatar { width: 64px; height: 64px; border-radius: 50%; }
-.links a { color: var(--series-1); }
-.empty { color: var(--text-muted); }
-.lb-table tr.me td { background: var(--seq-0); font-weight: 600; }
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
 
-.progress { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: .5rem; }
-.progress-fill { height: 100%; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
-.progress-label { font-size: .8rem; color: var(--text-muted); margin: .3rem 0 0; }
+/* =====================================================================
+   Tables
+   ===================================================================== */
+table.stat-table {
+  border-collapse: collapse;
+}
+table.stat-table th, table.stat-table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+table.stat-table th {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+table.stat-table tbody tr:hover {
+  background: var(--row-highlight);
+}
+.lb-table tr.me td {
+  background: var(--row-highlight);
+  font-weight: 600;
+}
+.lb-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: var(--space-1);
+}
 
-.lb-avatar { width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: .3rem; }
+/* Bare "Top channels" lists (me.html, member.html) */
+.stat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.stat-list li {
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border);
+}
 
-.standing { color: var(--text-secondary); font-weight: 600; margin-bottom: 1rem; }
+/* Quietest-members ranked list. Deliberately not a flex container: the
+   ordinals are the point of this page, and flex items only render their
+   ::marker in newer engines. */
+.rank-list {
+  padding-left: var(--space-5);
+  margin: 0;
+}
+.rank-list li {
+  margin-bottom: var(--space-1);
+}
 
-.badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600; border: 1px solid currentColor; }
-.badge-good { color: var(--good); }
-.badge-critical { color: var(--critical); }
-.badge-neutral { color: var(--text-secondary); border-color: var(--border); }
+/* Per-member warnings list nested inside a .stat-table <td> — without
+   this it inherits the browser's default 40px bullet indent inside the
+   cell. */
+.warn-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: .85rem;
+  color: var(--text-secondary);
+}
+.warn-list li {
+  margin-bottom: var(--space-1);
+}
+
+/* moderation.html's six top-level section wrappers, previously bare */
+.section {
+  margin-bottom: var(--space-5);
+}
+.section h2 {
+  margin-top: 0;
+}
+
+/* =====================================================================
+   Charts & heatmap
+   ===================================================================== */
+table.heatmap {
+  border-collapse: collapse;
+  font-size: .65rem;
+  color: var(--text-muted);
+}
+table.heatmap th, table.heatmap td {
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+/* =====================================================================
+   Components
+   ===================================================================== */
+.login-card {
+  text-align: center;
+  margin-top: var(--space-6);
+}
+.login-card p {
+  color: var(--text-secondary);
+}
+
+.button, a.button {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: filter .15s ease, transform .1s ease;
+}
+.button:hover, a.button:hover {
+  filter: brightness(.92);
+}
+.button:active, a.button:active {
+  transform: translateY(1px);
+}
+
+.period-selector {
+  margin-bottom: var(--space-4);
+  color: var(--text-secondary);
+}
+.period-selector select {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+.progress {
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+.progress-fill {
+  height: 100%;
+  background: var(--series-1);
+  border-radius: var(--radius-pill);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .progress-fill {
+    transition: width .3s ease;
+  }
+}
+.progress-label {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: .8rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.badge-good {
+  color: var(--good-text);
+}
+.badge-critical {
+  color: var(--critical-text);
+}
+.badge-neutral {
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+.empty {
+  color: var(--text-muted);
+}
+.links {
+  margin-top: var(--space-5);
+}
+/* In-content links: member names in tables (moderation warnings) and in the
+   quietest ranked list. Without this they fall back to the browser's default
+   blue, which is close to unreadable on the dark surface. */
+.links a,
+.stat-table a,
+.rank-list a,
+.stat-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.links a:hover,
+.stat-table a:hover,
+.rank-list a:hover,
+.stat-list a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.button:focus-visible, a.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.guild-list a:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.card:hover {
+  border-color: var(--accent);
+}
+
+/* =====================================================================
+   Media queries
+   ===================================================================== */
+@media (max-width: 640px) {
+  main {
+    padding: var(--space-3);
+  }
+  .topbar {
+    flex-wrap: wrap;
+    padding: var(--space-2) var(--space-3);
+  }
+  .panel-grid, .charts {
+    grid-template-columns: 1fr;
+  }
+  .cards {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+}
