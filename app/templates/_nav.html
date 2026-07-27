@@ -1,0 +1,19 @@
+{# Guild tab bar — joins the /guild/{id} (admin) and /me/{id} (member) trees
+   into one nav. Tabs are filtered by can_admin/can_member, which the caller
+   computes via _page_ctx from authz's session-cached sets — this macro does
+   no access checks of its own, it only decides what to *show*. #}
+{% macro guild_tabs(guild, nav_active, can_admin, can_member) %}
+<nav class="subnav" aria-label="Server sections">
+  {% if can_admin %}
+  <a class="tab" href="/guild/{{ guild.id }}" {% if nav_active == "overview" %}aria-current="page"{% endif %}>Overview</a>
+  {% endif %}
+  {% if can_member %}
+  <a class="tab" href="/me/{{ guild.id }}/leaderboards" {% if nav_active == "leaderboards" %}aria-current="page"{% endif %}>Leaderboards</a>
+  <a class="tab" href="/me/{{ guild.id }}" {% if nav_active == "me" %}aria-current="page"{% endif %}>My stats</a>
+  {% endif %}
+  {% if can_admin %}
+  <a class="tab" href="/guild/{{ guild.id }}/quietest" {% if nav_active == "quietest" %}aria-current="page"{% endif %}>Quietest</a>
+  <a class="tab" href="/guild/{{ guild.id }}/moderation" {% if nav_active == "moderation" %}aria-current="page"{% endif %}>Moderation</a>
+  {% endif %}
+</nav>
+{% endmacro %}

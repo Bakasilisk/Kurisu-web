@@ -3,6 +3,29 @@
 {% block content %}
 <h1>Moderation &amp; security — {{ guild.name }}</h1>
 
+{% set ns = namespace(disabled_cogs=0) %}
+{% for cog in features %}
+  {% if cog.globally_disabled or not cog.enabled %}{% set ns.disabled_cogs = ns.disabled_cogs + 1 %}{% endif %}
+{% endfor %}
+<section class="status-strip">
+  <div class="status-item">
+    <span class="label">Security mode</span>
+    <span class="badge {{ 'badge-good' if security.mode == 'active' else 'badge-neutral' }}">{{ security.mode }}</span>
+  </div>
+  <div class="status-item">
+    <span class="label">Lockdown</span>
+    <span class="badge {{ 'badge-critical' if security.lockdown.active else 'badge-good' }}">{{ "active" if security.lockdown.active else "inactive" }}</span>
+  </div>
+  <div class="status-item">
+    <span class="label">Warnings</span>
+    <span class="value">{{ warnings | length }}</span>
+  </div>
+  <div class="status-item">
+    <span class="label">Disabled cogs</span>
+    <span class="value">{{ ns.disabled_cogs }}</span>
+  </div>
+</section>
+
 <section class="section">
   <h2>Warnings</h2>
   {% if warnings %}
@@ -96,6 +119,4 @@
   </table>
   </div>
 </section>
-
-<section class="links"><a href="/guild/{{ guild.id }}">← Dashboard</a></section>
 {% endblock %}

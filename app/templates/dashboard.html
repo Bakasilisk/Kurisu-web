@@ -4,43 +4,60 @@
 <h1>{{ guild.name }}</h1>
 
 <section class="cards">
-  <div class="card"><span class="label">Total messages</span><span class="value">{{ "{:,}".format(overview.total_messages) }}</span></div>
-  <div class="card"><span class="label">Total words</span><span class="value">{{ "{:,}".format(overview.total_words) }}</span></div>
-  <div class="card"><span class="label">Active members (30d)</span><span class="value">{{ overview.active_members_30d }}</span></div>
-  <div class="card"><span class="label">Avg/day</span><span class="value">{{ "%.1f"|format(overview.avg_day) }}</span></div>
-  <div class="card"><span class="label">Reactions</span><span class="value">{{ "{:,}".format(overview.reactions) }}</span></div>
-  <div class="card"><span class="label">Voice time</span><span class="value" data-seconds="{{ overview.voice_seconds }}"></span></div>
-  <div class="card"><span class="label">First activity</span><span class="value">{{ overview.first_day or "—" }}</span></div>
-  <div class="card" title="{{ overview.trend.recent }} msgs recent 30d vs {{ overview.trend.prior }} prior{{ (' (%+.1f%%)'|format(overview.trend.pct)) if overview.trend.pct is not none else '' }}"><span class="label">Trend (30d)</span><span class="value">{{ overview.trend.text }}</span></div>
+  <div class="card card-hero"><span class="label">Total messages</span><span class="value">{{ "{:,}".format(overview.total_messages) }}</span></div>
+  <div class="card card-hero"><span class="label">Active members (30d)</span><span class="value">{{ overview.active_members_30d }}</span></div>
+  <div class="card card-hero">
+    <span class="label">Trend (30d)</span>
+    <span class="value">{{ overview.trend.text }}</span>
+    {% if overview.trend.pct is not none %}
+    <span class="trend-delta {{ 'trend-up' if overview.trend.pct >= 0 else 'trend-down' }}">{{ "%+.1f%%"|format(overview.trend.pct) }}</span>
+    {% endif %}
+    <span class="caption">{{ overview.trend.recent }} recent vs {{ overview.trend.prior }} prior</span>
+  </div>
 </section>
 
-<section class="period-selector">
-  <label>Period:
-    <select id="period-select">
-      <option value="week">Week</option>
-      <option value="month" selected>Month</option>
-      <option value="year">Year</option>
-      <option value="all">All</option>
-    </select>
-  </label>
+<section class="cards">
+  <div class="card card-sm"><span class="label">Total words</span><span class="value">{{ "{:,}".format(overview.total_words) }}</span></div>
+  <div class="card card-sm"><span class="label">Avg/day</span><span class="value">{{ "%.1f"|format(overview.avg_day) }}</span></div>
+  <div class="card card-sm"><span class="label">Reactions</span><span class="value">{{ "{:,}".format(overview.reactions) }}</span></div>
+  <div class="card card-sm"><span class="label">Voice time</span><span class="value" data-seconds="{{ overview.voice_seconds }}"></span></div>
+  <div class="card card-sm"><span class="label">First activity</span><span class="value">{{ overview.first_day or "—" }}</span></div>
 </section>
 
-<section class="charts">
-  <div class="chart-box"><h2>Top posters</h2><canvas id="chart-top"></canvas></div>
-  <div class="chart-box"><h2>Busiest channels</h2><canvas id="chart-channels"></canvas></div>
-  <div class="chart-box"><h2>Voice leaderboard</h2><canvas id="chart-voice"></canvas></div>
-  <div class="chart-box"><h2>Growth</h2><canvas id="chart-growth"></canvas><p class="caption" id="growth-caption"></p></div>
+<section class="charts-section">
+  <div class="charts-header">
+    <h2>Charts</h2>
+    <label class="period-selector">Period, charts only:
+      <select id="period-select">
+        <option value="week">Week</option>
+        <option value="month" selected>Month</option>
+        <option value="year">Year</option>
+        <option value="all">All</option>
+      </select>
+    </label>
+  </div>
+  <section class="charts">
+    <div class="chart-box"><h2>Top posters</h2><div class="chart-canvas-wrap"><canvas id="chart-top"></canvas></div></div>
+    <div class="chart-box"><h2>Busiest channels</h2><div class="chart-canvas-wrap"><canvas id="chart-channels"></canvas></div></div>
+    <div class="chart-box"><h2>Voice leaderboard</h2><div class="chart-canvas-wrap"><canvas id="chart-voice"></canvas></div></div>
+    <div class="chart-box"><h2>Growth</h2><div class="chart-canvas-wrap"><canvas id="chart-growth"></canvas></div><p class="caption" id="growth-caption"></p></div>
+  </section>
 </section>
 
 <section class="activity">
   <h2>Activity (hour × weekday)</h2>
   <div id="activity-heatmap"></div>
   <p class="caption" id="activity-caption"></p>
-</section>
-
-<section class="links">
-  <a href="/guild/{{ guild.id }}/quietest">Quietest members</a>
-  <a href="/guild/{{ guild.id }}/moderation">Moderation &amp; security</a>
+  <div class="heat-legend" aria-hidden="true">
+    <span>less</span>
+    <span class="heat-swatch" style="background: var(--seq-0)"></span>
+    <span class="heat-swatch" style="background: var(--seq-1)"></span>
+    <span class="heat-swatch" style="background: var(--seq-2)"></span>
+    <span class="heat-swatch" style="background: var(--seq-3)"></span>
+    <span class="heat-swatch" style="background: var(--seq-4)"></span>
+    <span class="heat-swatch" style="background: var(--seq-5)"></span>
+    <span>more</span>
+  </div>
 </section>
 {% endblock %}
 {% block scripts %}

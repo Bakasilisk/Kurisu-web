@@ -1,0 +1,65 @@
+{# Shared member-profile panels — used by both me.html (self-view) and
+   member.html (admin view of another member). Keeping this here means a
+   design change to these panels lands once, not twice. #}
+
+{% macro leveling_panel(leveling, level_progress) %}
+<div class="panel">
+  <h2>Leveling</h2>
+  {% if leveling.xp or leveling.rank %}
+  <table class="stat-table">
+    <tr><th>Level</th><td>{{ leveling.level }}</td></tr>
+    <tr><th>XP</th><td>{{ "{:,}".format(leveling.xp) }}</td></tr>
+    <tr><th>Rank</th><td>{{ ("#" ~ leveling.rank) if leveling.rank else "Unranked" }}</td></tr>
+  </table>
+  {% if level_progress %}
+  <div class="progress"><div class="progress-fill" style="width: {{ level_progress.pct }}%"></div></div>
+  <p class="progress-label">{{ "{:,}".format(level_progress.into) }}/{{ "{:,}".format(level_progress.span) }} XP to level {{ leveling.level + 1 }}</p>
+  {% endif %}
+  {% else %}
+  <p class="empty">No XP yet.</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro economy_panel(economy) %}
+<div class="panel">
+  <h2>Economy</h2>
+  {% if economy.bits or economy.rank %}
+  <table class="stat-table">
+    <tr><th>Bits</th><td>{{ "{:,}".format(economy.bits) }}</td></tr>
+    <tr><th>Rank</th><td>{{ ("#" ~ economy.rank) if economy.rank else "Unranked" }}</td></tr>
+    <tr><th>Payday streak</th><td>{{ (economy.streak ~ " days") if economy.streak else "—" }}</td></tr>
+  </table>
+  {% else %}
+  <p class="empty">No bits yet.</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro activity_stats(profile) %}
+<section class="cards">
+  <div class="card card-sm"><span class="label">Total messages</span><span class="value">{{ "{:,}".format(profile.total_messages) }}</span></div>
+  <div class="card card-sm"><span class="label">Total words</span><span class="value">{{ "{:,}".format(profile.total_words) }}</span></div>
+  <div class="card card-sm"><span class="label">Active days</span><span class="value">{{ profile.active_days }}</span></div>
+  <div class="card card-sm"><span class="label">First day</span><span class="value">{{ profile.first_day or "—" }}</span></div>
+  <div class="card card-sm"><span class="label">Server rank</span><span class="value">{{ ("#" ~ profile.server_rank) if profile.server_rank else "Unranked" }}</span></div>
+  <div class="card card-sm"><span class="label">% of server</span><span class="value">{{ "%.1f"|format(profile.pct_of_server) }}%</span></div>
+  <div class="card card-sm"><span class="label">Words/message</span><span class="value">{{ "%.1f"|format(profile.words_per_msg) }}</span></div>
+  <div class="card card-sm"><span class="label">Busiest hour</span><span class="value">{{ "%02d:00 UTC"|format(profile.busiest_hour) if profile.busiest_hour is not none else "—" }}</span></div>
+  <div class="card card-sm"><span class="label">Voice time</span><span class="value" data-seconds="{{ profile.voice_seconds }}"></span></div>
+  <div class="card card-sm"><span class="label">Reactions given/received</span><span class="value">{{ profile.reactions_given }} / {{ profile.reactions_received }}</span></div>
+</section>
+{% endmacro %}
+
+{% macro top_channels(channels) %}
+<h2>Top channels</h2>
+{% if channels %}
+<ul class="stat-list">
+  {% for c in channels %}
+  <li>#{{ c.channel.name }} — {{ c.count }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">No channel activity yet.</p>
+{% endif %}
+{% endmacro %}
