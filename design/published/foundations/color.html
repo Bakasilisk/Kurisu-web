@@ -130,6 +130,37 @@
   <code>app/static/js/dashboard.js</code> reads <code>--text-secondary</code>, <code>--border</code>, <code>--series-1</code>, <code>--series-6</code>, <code>--good</code>, <code>--critical</code> and <code>--seq-0</code>…<code>--seq-5</code> via <code>getComputedStyle</code> at chart-render time. Renaming one breaks charts silently — no console error, just wrong colors. Two further constraints follow from it: <code>--seq-0</code>…<code>--seq-5</code> must stay 6-digit hex literals, because <code>hexToRgb()</code> does <code>parseInt(hex.replace("#",""), 16)</code> — <code>rgb()</code>, <code>oklch()</code>, <code>color-mix()</code> and 3-digit shorthand all produce garbage. And <code>--series-1</code> must stay a flat color, never a gradient, because Chart.js takes it directly as a fill string.
 </div>
 
+<div class="warn">
+  <strong>Why the dark tokens are declared twice.</strong>
+  The dark palette appears in the stylesheet in full, twice — once under
+  <code>@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }</code> and once
+  under <code>:root[data-theme="dark"]</code>, so an explicit choice from the theme toggle beats
+  the OS preference. The tidy-looking alternatives both fail here.
+  <code>light-dark()</code> would collapse each pair to one declaration, but it is
+  <em>not</em> resolved inside custom properties: <code>getPropertyValue("--seq-0")</code> hands
+  back the literal token stream <code>light-dark(#d4eff4, #0a3d47)</code> and
+  <code>hexToRgb</code> parses it to <code>NaN</code>. Registering the tokens with
+  <code>@property</code> fails the same test from the other side — the computed value comes back
+  as <code>rgb(…)</code>, not the <code>#rrggbb</code> the parser expects. And dropping the media
+  query to rely on the JS-set attribute alone would leave the login page, which runs no
+  dashboard JS, stuck in light mode. So: two blocks, kept in sync deliberately.
+</div>
+
+<div class="demo-head">Surface &amp; tint tokens</div>
+<div class="note" style="max-width:none">
+  Added alongside the palette above, and CSS-only — none of these are read by
+  <code>dashboard.js</code>, so they are free to use <code>color-mix()</code> and gradients.
+  <ul>
+    <li><code>--surface-grad</code> — top-lit card fill, lighter edge down to the base tone.</li>
+    <li><code>--sheen</code> — the 1px inset highlight along that top edge.</li>
+    <li><code>--glow-brand</code> — two low-alpha radial pools of the brand, painted behind every page as an ambient wash so the background isn't a flat fill.</li>
+    <li><code>--brand-soft</code> / <code>--brand-softer</code> — tonal steps for tinted fills that shouldn't read as a second colour: badge pills, table hover, the card corner glow.</li>
+  </ul>
+  The palette stays single-hue on purpose. Depth comes from more tonal steps of the brand
+  teal and from lighting, not from introducing a second accent — the teal is the identity,
+  and it also has to match the favicon and the <code>theme-color</code> meta.
+</div>
+
 </main>
 </body>
 </html>

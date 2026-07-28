@@ -1,4 +1,4 @@
-<!-- @dsCard group="Foundations" name="Layout & scales" subtitle="6-step spacing, 4 radii, 3 elevations, 1100px column" viewport="820x900" -->
+<!-- @dsCard group="Foundations" name="Layout & scales" subtitle="6-step spacing, 5 radii, 4 elevations, lit surfaces, 1100px column" viewport="820x1080" -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -47,24 +47,33 @@
   <div style="border-radius:var(--radius-sm)">sm · 4px</div>
   <div style="border-radius:var(--radius-md)">md · 8px</div>
   <div style="border-radius:var(--radius-lg)">lg · 14px</div>
+  <div style="border-radius:var(--radius-xl)">xl · 18px</div>
   <div style="border-radius:var(--radius-pill)">pill · 999px</div>
 </div>
-<p class="note"><code>lg</code> is the card radius — panels, stat tiles, server cards, the login hero. <code>pill</code> covers buttons, badges, progress bars and the small gradient marks. <code>sm</code> is for heatmap cells and focus rings; <code>md</code> appears only on the period selector.</p>
+<p class="note"><code>xl</code> is the outer container radius — panels, chart boxes, the login hero. <code>lg</code> sits one level in: stat tiles and server cards, which are often nested inside an <code>xl</code> box and need to read as smaller than it. <code>pill</code> covers buttons, badges, progress bars and the small gradient marks. <code>sm</code> is for focus rings; <code>md</code> appears on the period selector and the switcher dropdown. Heatmap cells use a literal 5px, which is between <code>sm</code> and <code>md</code> and tuned to the 18px cell rather than to the scale.</p>
 
 <div class="demo-head">Elevation</div>
 <div class="elevs">
   <div class="elev" style="box-shadow:var(--shadow-1)">--shadow-1</div>
   <div class="elev" style="box-shadow:var(--shadow-2)">--shadow-2</div>
+  <div class="elev" style="box-shadow:var(--shadow-3)">--shadow-3</div>
   <div class="elev" style="box-shadow:var(--shadow-brand)">--shadow-brand</div>
 </div>
-<p class="note">Shadows are tinted toward the brand hue rather than neutral black. In dark mode they read as noise, so they tighten sharply and the border carries separation instead. <code>--shadow-1</code> is the resting card state, <code>--shadow-2</code> the hover lift, <code>--shadow-brand</code> the glow under buttons and the nav mark.</p>
+<p class="note">Shadows are tinted toward the brand hue rather than neutral black. In dark mode they read as noise, so they tighten sharply and the border carries separation instead. <code>--shadow-1</code> is the resting card state, <code>--shadow-2</code> a mid step used by panels on hover and by the switcher dropdown, <code>--shadow-3</code> the full hover lift on stat tiles and server cards, <code>--shadow-brand</code> the glow under buttons and the nav mark.</p>
+
+<div class="demo-head">Lit surfaces</div>
+<div class="elevs">
+  <div class="elev" style="background:var(--surface-grad);box-shadow:var(--shadow-1), inset 0 1px 0 var(--sheen)">--surface-grad + --sheen</div>
+  <div class="elev">flat --surface-1</div>
+</div>
+<p class="note">Every raised surface is top-lit rather than filled flat: <code>--surface-grad</code> runs from a lighter top edge down to the base tone, and <code>--sheen</code> adds a 1px inset highlight along that edge. The pair is what makes a card read as an object under a light source instead of a rectangle of paint — it does more for perceived quality than any single colour change. <code>--surface-1</code> stays a solid for the places that need one: the topbar's blur base, the switcher dropdown, and the <code>.chart-error</code> overlay, which has to hide a canvas behind it.</p>
 
 <div class="demo-head">Page column</div>
 <div class="col">main · max-width 1100px · centered · padding --space-5 (--space-4 / --space-3 under 640px)</div>
 <p class="note">Wide tables scroll inside a <code>.table-scroll</code> wrapper rather than widening the page; <code>main</code>'s own <code>overflow-x</code> stays unset so one stray wide element can't drag the whole layout sideways.</p>
 
 <div class="demo-head">Grid breakpoints</div>
-<p class="note"><code>.panel-grid</code> and <code>.charts</code> auto-fit at a 320px minimum; <code>.cards</code> at 190px — the floor at which the widest real value ("10,210,553") still fits on one line inside the tile padding. <code>.guild-list</code> auto-fills at 220px. Below 640px the panel and chart grids collapse to a single column and the stat tiles drop to a 134px minimum.</p>
+<p class="note"><code>.panel-grid</code> auto-fits at a 320px minimum. <code>.charts</code> takes a higher 420px floor, wrapped in <code>min(100%, …)</code>: it always holds four boxes, and at 320px the 1100px column fits three across and strands the fourth alone on a second row — 420px caps it at two and gives a clean 2×2. <code>.cards</code> sits at 190px — the floor at which the widest real value ("10,210,553") still fits on one line inside the tile padding. <code>.guild-list</code> auto-fills at 220px. Below 640px the panel and chart grids collapse to a single column and the stat tiles drop to a 134px minimum.</p>
 
 </main>
 </body>

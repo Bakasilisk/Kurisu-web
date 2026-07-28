@@ -28,7 +28,7 @@
   <a href="#" class="button">Sign in with Discord</a>
   <button type="button" class="button">Refresh</button>
 </div>
-<p class="note">One button, one treatment — a gradient pill on <code>--brand-grad</code> with white text and <code>--shadow-brand</code> beneath it. There is no secondary or ghost variant, because the app never puts two actions side by side: the only buttons are the login CTA and the error-page return link. Hover brightens 6% and deepens the glow; active drops 1px and collapses the shadow to <code>--shadow-1</code>.</p>
+<p class="note">One button, one treatment — a gradient pill on <code>--brand-grad</code> with white text and <code>--shadow-brand</code> beneath it, plus an <code>inset 0 1px 0</code> white highlight along the top edge so the pill reads as lit rather than flat. There is no secondary or ghost variant, because the app never puts two actions side by side: the only buttons are the login CTA and the error-page return link. Hover brightens 6% and deepens the glow; active drops 1px and collapses the shadow to <code>--shadow-1</code>.</p>
 
 <div class="demo-head">Badges</div>
 <div class="row">
@@ -36,7 +36,8 @@
   <span class="badge badge-critical">Banned</span>
   <span class="badge badge-neutral">Inactive</span>
 </div>
-<p class="note">Outlined rather than filled — <code>border: 1px solid currentColor</code>, so each variant only sets a text color and the border follows. Badges sit inside dense table rows, where a solid fill would compete with the row-hover and "this is you" highlights.</p>
+<p class="note">Tinted pills with a leading status dot. Both the fill and the border derive from <code>currentColor</code> — <code>color-mix(in srgb, currentColor 12%, transparent)</code> for the background and 30% for the border — so each variant still only sets a text colour and everything else follows. The tint is weak enough not to compete with the row-hover and "this is you" highlights these sit inside; the dot is what makes a status readable at a glance in a dense table.</p>
+<p class="note">They were previously outline-only (<code>border: 1px solid currentColor</code>, no fill). That read as unfinished next to the rest of the surfaces once those became lit, and gave a status badge no colour mass at small sizes.</p>
 <p class="note">The critical badge takes <code>--critical-text</code>, not <code>--critical</code>. The chart fill <code>#d03b3b</code> measures only 3.6:1 on the dark surface, so badge text steps to the lighter red that dark <code>--series-6</code> already establishes. Same split on the good side: <code>--good</code> fills charts, <code>--good-text</code> sets type.</p>
 
 <div class="demo-head">Focus</div>

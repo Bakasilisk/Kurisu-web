@@ -1,4 +1,4 @@
-<!-- @dsCard group="Components" name="Navigation" subtitle="Sticky topbar, guild switcher, tab bar, gradient mark" viewport="900x900" -->
+<!-- @dsCard group="Components" name="Navigation" subtitle="Sticky topbar, guild switcher, tab bar, theme toggle, gradient mark" viewport="900x1040" -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -39,6 +39,10 @@
     <a href="#" class="navlink">My stats</a>
     <span class="user">kurisu</span>
     <a href="#" class="logout">Log out</a>
+    <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">
+      <svg class="icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
   </nav>
   <nav class="subnav" aria-label="Server sections">
     <a class="tab" href="#" aria-current="page">Overview</a>
@@ -54,7 +58,7 @@
 <p class="note">The topbar is app-level and always present. The second row — <code>.subnav</code>, from <code>_nav.html</code>'s <code>guild_tabs</code> macro — appears only when a page has a <code>guild</code> in context, and scopes to that one server. Splitting them is what lets the <code>/guild/{id}</code> (admin) and <code>/me/{id}</code> (member) route trees read as one place: before the tab bar, those were two unconnected sets of URLs a user had to already know about.</p>
 
 <div class="demo-head">Tabs</div>
-<p class="note">Underline tabs, not pills: <code>border-bottom: 2px solid transparent</code> going to <code>--brand</code> on the current tab, which also takes the brand color. The transparent border is declared on every tab so nothing shifts by 2px when the active one changes. The active tab is marked with <code>aria-current="page"</code> — that attribute is the styling hook as well as the semantics, so the two can't drift apart.</p>
+<p class="note">Underline tabs, not pills. The marker is a 2px <code>::after</code> filled with <code>--brand-grad</code>, scaled to 0 by default and to 1 on the current tab — so it matches the h2 rule and the brand mark rather than being a flat border. Because it is a transform on an always-present element, nothing shifts by 2px when the active tab changes, and hovering a tab previews it at 60% width. The active tab is marked with <code>aria-current="page"</code> — that attribute is the styling hook as well as the semantics, so the two can't drift apart.</p>
 <p class="note">The macro is handed <code>can_admin</code> / <code>can_member</code> and only decides what to <em>show</em> — every route still runs its own authorization. A member without admin rights sees two tabs here, not five. It performs no access checks of its own; hiding a tab is never the control.</p>
 
 <div class="demo-head">Switcher</div>
@@ -62,10 +66,16 @@
 <p class="note">The list caps at <code>60vh</code> and scrolls — someone in forty servers gets a scroller, not a menu running off the viewport. Under 640px it anchors <code>right: 0</code> instead of <code>left</code>, so a long server name expands inward rather than off-screen.</p>
 
 <div class="demo-head">Behaviour</div>
-<p class="note">Sticky at <code>top: 0</code> on <code>z-index: 10</code>, over <code>--surface-1</code> with a hairline bottom border. Where <code>backdrop-filter</code> is supported the background drops to 78% via <code>color-mix</code> and picks up a 14px blur at 1.6 saturation, so content reads through it as it scrolls under. The opaque surface is the fallback, declared first — nothing depends on the blur landing.</p>
+<p class="note">Sticky at <code>top: 0</code> on <code>z-index: 10</code>, over <code>--surface-1</code>. The bottom edge is a gradient hairline drawn by <code>::after</code> rather than a flat <code>border-bottom</code> — brand at the left, through <code>--border</code>, fading to nothing at the right. Where <code>backdrop-filter</code> is supported the background drops to 78% via <code>color-mix</code> and picks up a 14px blur at 1.6 saturation, so content reads through it as it scrolls under. The opaque surface is the fallback, declared first — nothing depends on the blur landing.</p>
 
 <div class="demo-head">Structure</div>
-<p class="note">The wordmark takes <code>margin-right: auto</code>, which pushes everything after it to the right edge — so nav links, the current user and the logout link all sit in one right-hand cluster with no wrapper element. Links are <code>--text-secondary</code> at 500 and transition to <code>--brand</code> on hover.</p>
+<p class="note">The wordmark takes <code>margin-right: auto</code>, which pushes everything after it to the right edge — so nav links, the current user and the logout link all sit in one right-hand cluster with no wrapper element. Links are <code>--text-secondary</code> at 500 and go to <code>--brand</code> on hover, with a gradient underline that wipes in from the left via a <code>scaleX</code> transform. The tab bar's active marker works the same way, so the two rows share one motion idea.</p>
+
+<div class="demo-head">Theme toggle</div>
+<p class="note">A 32px icon button at the right end of the topbar, outside the <code>{% if user %}</code> block so the login page gets it too. Which glyph shows is decided in CSS from <code>:root</code>'s state, not by JS swapping the button's contents — the moon shows while light is active (click to go dark) and the sun while dark is active. That keeps the two icons static markup and means the correct one is right on first paint.</p>
+<p class="note">The button only carries an icon, so it takes an <code>aria-label</code>, and <code>aria-pressed</code> tracks the dark state. Both are written by <code>theme.js</code> once it knows the active theme, which it resolves from <code>data-theme</code> when set and <code>matchMedia</code> otherwise.</p>
+<p class="note"><strong>The boot script has to be inline.</strong> A stored preference is applied by a small blocking <code>&lt;script&gt;</code> in <code>base.html</code>'s <code>&lt;head&gt;</code>, before the stylesheet. Deferred or bottom-of-body, the page paints in the OS theme first and visibly flips — the one thing a theme toggle must never do. <code>theme.js</code> itself only wires the click, persists to <code>localStorage</code>, and dispatches a <code>themechange</code> event.</p>
+<p class="note">That event exists because Chart.js bakes its colours in at construction time. <code>dashboard.js</code> caches each box's last payload and re-renders from cache on <code>themechange</code>, so switching recolours the charts and the heatmap without a refetch or a loading flash. Anything else that reads a token at render time has to listen the same way.</p>
 
 <div class="demo-head">Mark</div>
 <p class="note">The 9×18 pill left of the wordmark is a <code>::before</code> on <code>.brand</code> filled with <code>--brand-grad</code> and lit by <code>--shadow-brand</code>. It gives the nav an anchor without needing an image asset, which keeps the app's no-external-requests policy intact — the only binary in <code>static/vendor</code> is the font and Chart.js.</p>

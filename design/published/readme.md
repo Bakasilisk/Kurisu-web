@@ -20,7 +20,7 @@ the site actually renders, not a re-drawing of it.
 - **Components** — buttons and badges, cards and panels, navigation, tables
   and lists, controls and progress, loading and error states.
 
-## Two things that constrain changes
+## Three things that constrain changes
 
 **Light and dark are independently chosen instances.** Not a filter flip, not
 a lightness inversion. A new color token needs two values picked deliberately;
@@ -34,6 +34,14 @@ charts. Renaming one breaks the dashboard silently. `--seq-*` must stay 6-digit
 hex literals — the JS parses them with `parseInt(hex.replace("#",""), 16)`, so
 `rgb()`, `oklch()`, `color-mix()` and 3-digit shorthand all break the heatmap.
 `--series-1` must stay a flat color, because Chart.js takes it as a fill string.
+
+**Dark tokens are declared twice, deliberately.** Once under
+`@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` and once
+under `:root[data-theme="dark"]`, so an explicit choice from the theme toggle beats
+the OS. `light-dark()` would collapse the duplication but is not resolved inside
+custom properties — `getPropertyValue` returns the literal `light-dark(...)` token
+stream and `hexToRgb` yields `NaN`. Dropping the media query would leave the
+JS-free login page light-only. Keep the two blocks in sync.
 
 ## One deviation from production
 

@@ -31,7 +31,8 @@
   <div class="card"><span class="label">Active members (30d)</span><span class="value">1,904</span></div>
   <div class="card"><span class="label">Messages today</span><span class="value">7,418</span></div>
 </div>
-<p class="note">These carry most of the "designed" weight on the dashboard: a 3px gradient edge across the top, an uppercase micro-label, and an oversized tabular figure. <code>margin-top: auto</code> pins every value to the bottom of its tile, so a label that wraps to two lines — "Active members (30d)" above — doesn't push its number out of line with the rest of the row. Hover borders in <code>--brand</code> and lifts to <code>--shadow-2</code>.</p>
+<p class="note">These carry most of the "designed" weight on the dashboard: a top-lit surface (<code>--surface-grad</code> plus a 1px <code>--sheen</code> inset highlight), an uppercase micro-label, and an oversized tabular figure. <code>margin-top: auto</code> pins every value to the bottom of its tile, so a label that wraps to two lines — "Active members (30d)" above — doesn't push its number out of line with the rest of the row. Hover borders toward <code>--brand</code>, lifts 2px and rises to <code>--shadow-3</code>.</p>
+<p class="note">The gradient accent edge is <em>not</em> on the base tile. It used to be, which meant eight identical teal bars on the dashboard and six more on the moderation page — at that density it read as texture rather than emphasis. It now belongs to <code>.card-hero</code> only (see below); unaccented tiles get a brand corner glow that fades in on hover instead.</p>
 
 <div class="demo-head">Tile hierarchy</div>
 <div class="cards">
@@ -51,7 +52,7 @@
   <div class="card card-sm"><span class="label">Voice time</span><span class="value">3,204h</span></div>
   <div class="card card-sm"><span class="label">First activity</span><span class="value">2021-03-14</span></div>
 </div>
-<p class="note">The dashboard opened with eight tiles at one size, which said nothing about which of the eight mattered. <code>.card-hero</code> and <code>.card-sm</code> split them into a row of three and a row of five. Both are modifiers on <code>.card</code>, not new components — they change type scale and padding only, so the gradient edge, the hover lift and the <code>margin-top: auto</code> baseline all still come from one definition.</p>
+<p class="note">The dashboard opened with eight tiles at one size, which said nothing about which of the eight mattered. <code>.card-hero</code> and <code>.card-sm</code> split them into a row of three and a row of five. Both are modifiers on <code>.card</code>, not new components — the hover lift and the <code>margin-top: auto</code> baseline still come from one definition. <code>.card-hero</code> adds the one thing that isn't shared: the 3px gradient edge, inset from both sides by <code>--space-4</code> so it reads as a deliberate mark rather than a border. Three accented tiles on the dashboard, not eight.</p>
 <p class="note">Under 640px the hero row drops to a single column via <code>.cards:has(.card-hero)</code>, giving the largest numerals on the page full width instead of squeezing three across. Engines without <code>:has()</code> keep the auto-fit grid — a worse layout, not a broken one, which is why the rule is written as an enhancement rather than a floor.</p>
 <p class="note">The trend delta was a <code>title</code> tooltip: invisible, and unreachable on touch. Now it's text, in the same <code>--good-text</code> / <code>--critical-text</code> pair the badges use, with the sign carried by the <code>%+.1f%%</code> format so direction reads without relying on the color alone.</p>
 
@@ -74,7 +75,7 @@
     <span class="value">2</span>
   </div>
 </section>
-<p class="note">Sits above moderation's six detail sections and answers "is anything wrong right now" without scrolling. A flatter relative of <code>.card</code> — same surface, border, radius and <code>--shadow-1</code>, but no gradient edge and no hover state, because nothing here is a link.</p>
+<p class="note">Sits above moderation's six detail sections and answers "is anything wrong right now" without scrolling. A quieter relative of <code>.card</code> — same lit surface, border, radius and <code>--shadow-1</code>, but no gradient edge and no lift, because nothing here is a link. It does warm its border on hover, which is enough to confirm the strip is one row of related items.</p>
 <p class="note">Two of the four slots hold a badge and two hold a numeral. That's the point of the shape: state and count sit in one row without a separate component for each. <code>auto-fit, minmax(150px, 1fr)</code> reflows to two-up and then one-up as the column narrows, with no breakpoint of its own.</p>
 
 <div class="demo-head">Panels</div>

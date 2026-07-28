@@ -42,7 +42,8 @@
     </table>
   </div>
 </div>
-<p class="note">Only the ranked leaderboards fill their panel (<code>.lb-table</code> sets <code>width: 100%</code>). The "this is you" row takes <code>--row-highlight</code> at 650 weight with a 3px inset brand bar on the first cell — a token kept independent of the heatmap ramp, so the leaderboard isn't coupled to it. Rows hover to <code>--surface-2</code>.</p>
+<p class="note">Only the ranked leaderboards fill their panel (<code>.lb-table</code> sets <code>width: 100%</code>). The "this is you" row takes <code>--row-highlight</code> at 650 weight with a 4px inset brand rail on the first cell — a token kept independent of the heatmap ramp, so the leaderboard isn't coupled to it. The highlight is a wash that fades out across the row, and it sits on the <code>&lt;tr&gt;</code>, not the cells: per-cell the gradient restarts in every <code>&lt;td&gt;</code> and visibly bands across the row. Rows hover to <code>--brand-softer</code> rather than a flat grey swap.</p>
+<p class="note">Column headers — rows with no <code>&lt;td&gt;</code> in them, matched via <code>tr:not(:has(td))</code> — take a faint band so the header separates from the body. That selector is what distinguishes a real header row from the row-label <code>&lt;th&gt;</code> the key/value tables use; engines without <code>:has()</code> simply skip the band.</p>
 
 <div class="demo-head">Rank medals</div>
 <p>
@@ -92,7 +93,7 @@
   </div>
 </div>
 <p class="note">The legend is built in <code>dashboard.html</code> from the same <code>--seq-0</code>…<code>--seq-5</code> ramp <code>sequentialColor()</code> reads at render time — six swatches, no new color logic, so a change to the ramp moves the map and its key together. It carries <code>aria-hidden="true"</code>: the caption underneath already states the peak in words, which is the part a screen reader needs.</p>
-<p class="note">Rounded, gapped cells rather than a hairline grid — <code>border-spacing: 3px</code> on a separate-borders table, which reads as a contribution graph. 18×18 cells at <code>--radius-sm</code>. The wrapper scrolls horizontally on narrow screens rather than compressing.</p>
+<p class="note">Rounded, gapped cells rather than a hairline grid — <code>border-spacing: 3px</code> on a separate-borders table, which reads as a contribution graph. 18×18 cells at a 5px radius, each taking a 2px <code>--brand</code> ring on hover so a single cell can be picked out of 168 of them. The wrapper scrolls horizontally on narrow screens rather than compressing.</p>
 
 <div class="demo-head">Lists</div>
 <div class="panel-grid">
