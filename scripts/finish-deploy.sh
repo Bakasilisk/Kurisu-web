@@ -176,17 +176,59 @@ mapfile -t MERGED < <(
 if [[ ${#MERGED[@]} -eq 0 ]]; then
   ok "Nothing to prune"
 else
-  echo "    Fully merged into main, safe to delete:"
+  # Everything above reads remote-tracking refs, which are only as fresh as
+  # the last fetch. Two things can have happened on GitHub since, and each
+  # needs catching for a different reason:
+  #
+  #   gone   — the branch was already deleted. Harmless in itself, but git
+  #            aborts an entire multi-ref delete over one unexpected ref, so
+  #            a single stale entry would stop every other branch from being
+  #            deleted. That happened for real on 2026-07-28.
+  #   moved  — the branch got new commits pushed to it. Those commits are not
+  #            in the --merged result that put it on this list, so deleting it
+  #            now could drop work. This is the one that actually matters.
+  declare -A LIVE=()
+  while read -r sha ref; do
+    LIVE["${ref#refs/heads/}"]="$sha"
+  done < <(git ls-remote --heads origin)
+
+  TO_DELETE=()
   for b in "${MERGED[@]}"; do
-    printf '      origin/%-32s (last: %s)\n' "$b" "$(git log -1 --format='%ar' "origin/$b")"
+    if [[ -z "${LIVE[$b]:-}" ]]; then
+      warn "origin/$b is already gone on GitHub — skipping"
+    elif [[ "${LIVE[$b]}" != "$(git rev-parse "origin/$b")" ]]; then
+      warn "origin/$b moved since the last fetch (now ${LIVE[$b]:0:7}) — skipping"
+      warn "  it may have unmerged commits now; re-run to re-check it"
+    else
+      TO_DELETE+=("$b")
+    fi
   done
-  read -rp "    Delete these on GitHub? [y/N] " reply
-  if [[ "$reply" == [yY] ]]; then
-    git push origin --delete "${MERGED[@]}"
+
+  if [[ ${#TO_DELETE[@]} -eq 0 ]]; then
+    ok "Nothing left to prune once checked against the live remote"
     git remote prune origin
-    ok "Deleted and pruned"
   else
-    ok "Left alone"
+    echo "    Fully merged into main, still at the tip we checked, safe to delete:"
+    for b in "${TO_DELETE[@]}"; do
+      printf '      origin/%-32s (last: %s)\n' "$b" "$(git log -1 --format='%ar' "origin/$b")"
+    done
+    read -rp "    Delete these on GitHub? [y/N] " reply
+    if [[ "$reply" == [yY] ]]; then
+      # One ref per push, for the same reason as the "gone" case above: a
+      # single rejected ref must not take the rest of the batch down with it.
+      FAILED=()
+      for b in "${TO_DELETE[@]}"; do
+        git push origin --delete "$b" || FAILED+=("$b")
+      done
+      git remote prune origin
+      if [[ ${#FAILED[@]} -eq 0 ]]; then
+        ok "Deleted and pruned"
+      else
+        warn "Deleted all but: ${FAILED[*]}"
+      fi
+    else
+      ok "Left alone"
+    fi
   fi
 fi
 
