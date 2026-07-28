@@ -2,3 +2,14 @@
 .venv/
 __pycache__/
 *.pyc
+
+# scripts/preview.py output — rendered templates, screenshots, and a symlink
+# back to app/static. All regenerable, none of it belongs in the repo.
+.preview/
+
+# design/ is a drop zone: track the notes and component files, not the raw
+# screenshots and exports that get dropped in to be translated.
+design/incoming/*
+!design/incoming/.gitkeep
+design/reference/*
+!design/reference/.gitkeep
