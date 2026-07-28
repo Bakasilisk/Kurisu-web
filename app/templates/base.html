@@ -7,7 +7,19 @@
   <meta name="theme-color" content="#00a5bd">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300a5bd'/%3E%3Crect x='8' y='16' width='4' height='8' rx='2' fill='white'/%3E%3Crect x='14' y='11' width='4' height='13' rx='2' fill='white'/%3E%3Crect x='20' y='7' width='4' height='17' rx='2' fill='white'/%3E%3C/svg%3E">
   <link rel="preload" href="/static/vendor/inter-var.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/static/css/style.css?v=4">
+  {# Theme boot. Inline and blocking on purpose: it has to set data-theme
+     before first paint, or a user who picked dark sees a flash of light.
+     The rest of the toggle lives in /static/js/theme.js. No stored value
+     leaves the attribute off, so prefers-color-scheme applies. #}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("kurisu-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch (e) { /* storage blocked — fall back to the OS preference */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/style.css?v=5">
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -31,6 +43,13 @@
       <span class="user">{{ user.username }}</span>
       <a class="logout" href="/logout">Log out</a>
     {% endif %}
+    {# Outside the `user` check so the login page gets it too. The label and
+       aria-pressed are set by theme.js once it knows the active theme; which
+       of the two icons shows is decided in CSS from :root's data-theme. #}
+    <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch theme">
+      <svg class="icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
   </header>
   {% if guild %}
   {% from "_nav.html" import guild_tabs %}
@@ -40,6 +59,7 @@
     {% block content %}{% endblock %}
   </main>
   <script src="/static/vendor/chart.umd.min.js"></script>
+  <script src="/static/js/theme.js?v=1"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -15,6 +15,15 @@ function formatVoiceSeconds() {
 
 const charts = {};
 
+// Last successful payload per box, plus the box list it came from. Charts
+// read their colours from CSS custom properties at *construction* time, so a
+// theme switch would otherwise leave light-mode axes on a dark page. Keeping
+// the data lets initDashboard re-render straight from cache on "themechange"
+// — no refetch, and no loading skeleton flashing over a chart that's already
+// on screen.
+const lastData = {};
+let currentBoxes = [];
+
 function destroyChart(key) {
   if (charts[key]) {
     charts[key].destroy();
@@ -218,6 +227,7 @@ async function loadOne(entry) {
   try {
     const data = await entry.fetch();
     clearBoxState(entry.box);
+    lastData[entry.key] = data;
     entry.render(data);
   } catch (e) {
     showBoxError(entry.box, entry);
@@ -228,9 +238,19 @@ async function loadDashboardData(gid, period) {
   const select = document.getElementById("period-select");
   if (select) select.disabled = true;
   const entries = dashboardBoxes(gid, period);
+  currentBoxes = entries;
   const results = await Promise.allSettled(entries.map((entry) => loadOne(entry)));
   if (select) select.disabled = false;
   return results;
+}
+
+// Re-draw every box that has cached data, so charts pick up the new theme's
+// tokens. Boxes still loading or showing an error are skipped — they'll read
+// the current tokens when they next render anyway.
+function rerenderForTheme() {
+  currentBoxes.forEach((entry) => {
+    if (entry.key in lastData) entry.render(lastData[entry.key]);
+  });
 }
 
 function initDashboard(gid) {
@@ -238,5 +258,6 @@ function initDashboard(gid) {
   const select = document.getElementById("period-select");
   const load = () => loadDashboardData(gid, select.value);
   select.addEventListener("change", load);
+  document.addEventListener("themechange", rerenderForTheme);
   load();
 }
