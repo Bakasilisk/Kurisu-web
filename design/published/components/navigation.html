@@ -1,0 +1,79 @@
+<!-- @dsCard group="Components" name="Navigation" subtitle="Sticky topbar, guild switcher, tab bar, gradient mark" viewport="900x900" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Navigation</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css.
+   The topbar is normally position:sticky against the page; here it sits in
+   a bordered frame so the card shows the bar itself rather than an empty
+   scroll region. */
+.frame { border-bottom: 1px solid var(--border); }
+.demo { max-width: 860px; margin: 0 auto; padding: var(--space-5) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-5) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; margin-top: var(--space-3); }
+.note code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <nav class="topbar">
+    <a href="#" class="brand">Kurisu</a>
+    <details class="switcher" open>
+      <summary><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%2300a5bd'/%3E%3C/svg%3E"> Kurisu HQ</summary>
+      <ul>
+        <li><a href="#" aria-current="page"><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%2300a5bd'/%3E%3C/svg%3E"><span>Kurisu HQ</span></a></li>
+        <li><a href="#"><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%23e34948'/%3E%3C/svg%3E"><span>Lab Notes</span></a></li>
+        <li><a href="#"><img class="guild-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%236f6d67'/%3E%3C/svg%3E"><span>Archive</span></a></li>
+      </ul>
+    </details>
+    <a href="#" class="navlink">My stats</a>
+    <span class="user">kurisu</span>
+    <a href="#" class="logout">Log out</a>
+  </nav>
+  <nav class="subnav" aria-label="Server sections">
+    <a class="tab" href="#" aria-current="page">Overview</a>
+    <a class="tab" href="#">Leaderboards</a>
+    <a class="tab" href="#">My stats</a>
+    <a class="tab" href="#">Quietest</a>
+    <a class="tab" href="#">Moderation</a>
+  </nav>
+</div>
+
+<main class="demo">
+<div class="demo-head">Two rows</div>
+<p class="note">The topbar is app-level and always present. The second row — <code>.subnav</code>, from <code>_nav.html</code>'s <code>guild_tabs</code> macro — appears only when a page has a <code>guild</code> in context, and scopes to that one server. Splitting them is what lets the <code>/guild/{id}</code> (admin) and <code>/me/{id}</code> (member) route trees read as one place: before the tab bar, those were two unconnected sets of URLs a user had to already know about.</p>
+
+<div class="demo-head">Tabs</div>
+<p class="note">Underline tabs, not pills: <code>border-bottom: 2px solid transparent</code> going to <code>--brand</code> on the current tab, which also takes the brand color. The transparent border is declared on every tab so nothing shifts by 2px when the active one changes. The active tab is marked with <code>aria-current="page"</code> — that attribute is the styling hook as well as the semantics, so the two can't drift apart.</p>
+<p class="note">The macro is handed <code>can_admin</code> / <code>can_member</code> and only decides what to <em>show</em> — every route still runs its own authorization. A member without admin rights sees two tabs here, not five. It performs no access checks of its own; hiding a tab is never the control.</p>
+
+<div class="demo-head">Switcher</div>
+<p class="note">A bare <code>&lt;details&gt;</code> dropdown, rendered only when there's more than one guild to switch between — so the common single-server case gets no dead control. No JavaScript: <code>summary</code> drops its native marker for a <code>::after</code> caret, and the panel is absolutely positioned at <code>z-index: 20</code>, above the sticky topbar's 10. It's shown open here; it is closed by default.</p>
+<p class="note">The list caps at <code>60vh</code> and scrolls — someone in forty servers gets a scroller, not a menu running off the viewport. Under 640px it anchors <code>right: 0</code> instead of <code>left</code>, so a long server name expands inward rather than off-screen.</p>
+
+<div class="demo-head">Behaviour</div>
+<p class="note">Sticky at <code>top: 0</code> on <code>z-index: 10</code>, over <code>--surface-1</code> with a hairline bottom border. Where <code>backdrop-filter</code> is supported the background drops to 78% via <code>color-mix</code> and picks up a 14px blur at 1.6 saturation, so content reads through it as it scrolls under. The opaque surface is the fallback, declared first — nothing depends on the blur landing.</p>
+
+<div class="demo-head">Structure</div>
+<p class="note">The wordmark takes <code>margin-right: auto</code>, which pushes everything after it to the right edge — so nav links, the current user and the logout link all sit in one right-hand cluster with no wrapper element. Links are <code>--text-secondary</code> at 500 and transition to <code>--brand</code> on hover.</p>
+
+<div class="demo-head">Mark</div>
+<p class="note">The 9×18 pill left of the wordmark is a <code>::before</code> on <code>.brand</code> filled with <code>--brand-grad</code> and lit by <code>--shadow-brand</code>. It gives the nav an anchor without needing an image asset, which keeps the app's no-external-requests policy intact — the only binary in <code>static/vendor</code> is the font and Chart.js.</p>
+
+<div class="demo-head">Narrow</div>
+<p class="note">The two rows narrow differently, on purpose. Under 640px the topbar wraps: <code>flex-wrap</code> turns on, the gap tightens to <code>--space-3</code>, padding drops to match, and the link cluster falls to a second line under the wordmark.</p>
+<p class="note">The tab bar does the opposite — it stays one line and becomes a horizontal scroller. With five possible tabs, wrapping would push the page content down by an amount that depends on which tabs a given user can see, so the same page would start at a different offset for an admin and a member. A scroller keeps that fixed.</p>
+</main>
+
+</body>
+</html>

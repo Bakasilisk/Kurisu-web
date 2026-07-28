@@ -1,0 +1,135 @@
+<!-- @dsCard group="Foundations" name="Color" subtitle="Both schemes as selected instances; 6 named + 12 ramp tokens" viewport="920x1180" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Color</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only. The swatch values below are literals rather than
+   var() lookups on purpose: the app resolves light/dark through a
+   prefers-color-scheme media query, so a var() would only ever show one
+   scheme at a time. Both instances need to be visible side by side. */
+.demo { max-width: 880px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.schemes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+.scheme { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.scheme-label {
+  padding: var(--space-2) var(--space-3); font-size: .68rem; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.swatches { display: grid; gap: 1px; }
+.sw { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); }
+.chip { width: 30px; height: 30px; border-radius: var(--radius-sm); flex: none; border: 1px solid rgba(128,128,128,.35); }
+.sw code { font-size: .72rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.sw .hex { margin-left: auto; font-size: .68rem; opacity: .65; font-family: ui-monospace, Menlo, monospace; }
+.ramp { display: flex; height: 34px; border-radius: var(--radius-sm); overflow: hidden; margin: 0 var(--space-3) var(--space-3); }
+.ramp span { flex: 1; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 68ch; margin: var(--space-3) 0 0; }
+.warn {
+  border-left: 3px solid var(--critical-text); padding: var(--space-3) var(--space-4);
+  background: var(--surface-2); border-radius: var(--radius-sm);
+  font-size: .82rem; margin-top: var(--space-4);
+}
+.warn code { font-family: ui-monospace, Menlo, monospace; font-size: .92em; }
+@media (max-width: 720px) { .schemes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Surfaces &amp; text</div>
+<div class="schemes">
+  <div class="scheme" style="background:#f9f9f7;color:#0b0b0b">
+    <div class="scheme-label" style="background:#f2f1ec;color:#6f6d67">Light</div>
+    <div class="swatches">
+      <div class="sw"><span class="chip" style="background:#f9f9f7"></span><code>--page</code><span class="hex">#f9f9f7</span></div>
+      <div class="sw"><span class="chip" style="background:#fcfcfb"></span><code>--surface-1</code><span class="hex">#fcfcfb</span></div>
+      <div class="sw"><span class="chip" style="background:#f2f1ec"></span><code>--surface-2</code><span class="hex">#f2f1ec</span></div>
+      <div class="sw"><span class="chip" style="background:#0b0b0b"></span><code>--text-primary</code><span class="hex">#0b0b0b</span></div>
+      <div class="sw"><span class="chip" style="background:#52514e"></span><code>--text-secondary</code><span class="hex">#52514e</span></div>
+      <div class="sw"><span class="chip" style="background:#6f6d67"></span><code>--text-muted</code><span class="hex">#6f6d67</span></div>
+      <div class="sw"><span class="chip" style="background:#e1e0d9"></span><code>--border</code><span class="hex">#e1e0d9</span></div>
+      <div class="sw"><span class="chip" style="background:#e2f4f7"></span><code>--row-highlight</code><span class="hex">#e2f4f7</span></div>
+    </div>
+  </div>
+  <div class="scheme" style="background:#0d0d0d;color:#ffffff">
+    <div class="scheme-label" style="background:#232322;color:#8e8c86">Dark</div>
+    <div class="swatches">
+      <div class="sw"><span class="chip" style="background:#0d0d0d"></span><code>--page</code><span class="hex">#0d0d0d</span></div>
+      <div class="sw"><span class="chip" style="background:#1a1a19"></span><code>--surface-1</code><span class="hex">#1a1a19</span></div>
+      <div class="sw"><span class="chip" style="background:#232322"></span><code>--surface-2</code><span class="hex">#232322</span></div>
+      <div class="sw"><span class="chip" style="background:#ffffff"></span><code>--text-primary</code><span class="hex">#ffffff</span></div>
+      <div class="sw"><span class="chip" style="background:#c3c2b7"></span><code>--text-secondary</code><span class="hex">#c3c2b7</span></div>
+      <div class="sw"><span class="chip" style="background:#8e8c86"></span><code>--text-muted</code><span class="hex">#8e8c86</span></div>
+      <div class="sw"><span class="chip" style="background:#2c2c2a"></span><code>--border</code><span class="hex">#2c2c2a</span></div>
+      <div class="sw"><span class="chip" style="background:#10333c"></span><code>--row-highlight</code><span class="hex">#10333c</span></div>
+    </div>
+  </div>
+</div>
+<p class="note">Light and dark are independently selected instances, not a filter flip or a lightness inversion. Every new color token needs two values chosen deliberately.</p>
+
+<div class="demo-head">Brand &amp; status</div>
+<div class="schemes">
+  <div class="scheme" style="background:#f9f9f7;color:#0b0b0b">
+    <div class="scheme-label" style="background:#f2f1ec;color:#6f6d67">Light</div>
+    <div class="swatches">
+      <div class="sw"><span class="chip" style="background:#00758a"></span><code>--brand / --accent</code><span class="hex">#00758a</span></div>
+      <div class="sw"><span class="chip" style="background:linear-gradient(135deg,#00a5bd 0%,#00758a 100%)"></span><code>--brand-grad</code><span class="hex">#00a5bd → #00758a</span></div>
+      <div class="sw"><span class="chip" style="background:#0a7a0a"></span><code>--good-text</code><span class="hex">#0a7a0a</span></div>
+      <div class="sw"><span class="chip" style="background:#c93636"></span><code>--critical-text</code><span class="hex">#c93636</span></div>
+      <div class="sw"><span class="chip" style="background:#0090a5"></span><code>--series-1</code><span class="hex">#0090a5</span></div>
+      <div class="sw"><span class="chip" style="background:#e34948"></span><code>--series-6</code><span class="hex">#e34948</span></div>
+      <div class="sw"><span class="chip" style="background:#0ca30c"></span><code>--good</code><span class="hex">#0ca30c</span></div>
+      <div class="sw"><span class="chip" style="background:#d03b3b"></span><code>--critical</code><span class="hex">#d03b3b</span></div>
+    </div>
+  </div>
+  <div class="scheme" style="background:#0d0d0d;color:#ffffff">
+    <div class="scheme-label" style="background:#232322;color:#8e8c86">Dark</div>
+    <div class="swatches">
+      <div class="sw"><span class="chip" style="background:#00a5bd"></span><code>--brand / --accent</code><span class="hex">#00a5bd</span></div>
+      <div class="sw"><span class="chip" style="background:linear-gradient(135deg,#23c3da 0%,#00a5bd 100%)"></span><code>--brand-grad</code><span class="hex">#23c3da → #00a5bd</span></div>
+      <div class="sw"><span class="chip" style="background:#0ca30c"></span><code>--good-text</code><span class="hex">#0ca30c</span></div>
+      <div class="sw"><span class="chip" style="background:#e66767"></span><code>--critical-text</code><span class="hex">#e66767</span></div>
+      <div class="sw"><span class="chip" style="background:#00a5bd"></span><code>--series-1</code><span class="hex">#00a5bd</span></div>
+      <div class="sw"><span class="chip" style="background:#e66767"></span><code>--series-6</code><span class="hex">#e66767</span></div>
+      <div class="sw"><span class="chip" style="background:#0ca30c"></span><code>--good</code><span class="hex">#0ca30c</span></div>
+      <div class="sw"><span class="chip" style="background:#d03b3b"></span><code>--critical</code><span class="hex">#d03b3b</span></div>
+    </div>
+  </div>
+</div>
+<p class="note">The identity is one color — brand teal <code>#00A5BD</code>. It measures 5.9:1 on the dark surface but only 2.9:1 on the light one, so light mode steps to a darker tone of the same hue. <code>--accent</code> resolves to the same value as <code>--brand</code>; they stay separate names so interactive color can diverge from the wordmark later without a find-and-replace. <code>--series-1</code> is a fill rather than text, so it targets the 3:1 non-text threshold instead of 4.5:1 — which allows a lighter step than <code>--brand</code> uses.</p>
+
+<div class="demo-head">Sequential ramp — activity heatmap</div>
+<div class="schemes">
+  <div class="scheme" style="background:#f9f9f7;color:#0b0b0b">
+    <div class="scheme-label" style="background:#f2f1ec;color:#6f6d67">Light — low → high</div>
+    <div class="ramp">
+      <span style="background:#d4eff4"></span><span style="background:#a6dee8"></span><span style="background:#6fc9d9"></span>
+      <span style="background:#29aec4"></span><span style="background:#00849b"></span><span style="background:#005567"></span>
+    </div>
+  </div>
+  <div class="scheme" style="background:#0d0d0d;color:#ffffff">
+    <div class="scheme-label" style="background:#232322;color:#8e8c86">Dark — low → high</div>
+    <div class="ramp">
+      <span style="background:#0a3d47"></span><span style="background:#0d4d5a"></span><span style="background:#11616f"></span>
+      <span style="background:#007d92"></span><span style="background:#00a5bd"></span><span style="background:#4fc9db"></span>
+    </div>
+  </div>
+</div>
+<p class="note">Monotonic in luminance, so the ordering survives greyscale. The dark ramp runs the opposite direction in lightness: zero recedes toward the dark surface, and max is the brightest step against it.</p>
+
+<div class="warn">
+  <strong>These token names are a runtime API.</strong>
+  <code>app/static/js/dashboard.js</code> reads <code>--text-secondary</code>, <code>--border</code>, <code>--series-1</code>, <code>--series-6</code>, <code>--good</code>, <code>--critical</code> and <code>--seq-0</code>…<code>--seq-5</code> via <code>getComputedStyle</code> at chart-render time. Renaming one breaks charts silently — no console error, just wrong colors. Two further constraints follow from it: <code>--seq-0</code>…<code>--seq-5</code> must stay 6-digit hex literals, because <code>hexToRgb()</code> does <code>parseInt(hex.replace("#",""), 16)</code> — <code>rgb()</code>, <code>oklch()</code>, <code>color-mix()</code> and 3-digit shorthand all produce garbage. And <code>--series-1</code> must stay a flat color, never a gradient, because Chart.js takes it directly as a fill string.
+</div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,1113 @@
+/* =====================================================================
+   Fonts
+   Inter Variable, self-hosted (scripts/fetch-vendor.sh). No CDN at
+   runtime, same policy as the vendored Chart.js. font-display: swap so a
+   slow font never blocks first paint — the system stack below is the
+   fallback and the layout is metric-tolerant either way.
+   ===================================================================== */
+@font-face {
+  font-family: "Inter Variable";
+  src: url("/static/vendor/inter-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =====================================================================
+   Tokens
+   Design tokens — from the dataviz skill's reference palette (references/
+   palette.md). Light/dark are both selected instances (not an automatic
+   filter-flip).
+
+   IMPORTANT: --text-secondary, --border, --series-1, --series-6, --good,
+   --critical, and --seq-0..--seq-5 are read by app/static/js/dashboard.js
+   via getComputedStyle at chart-render time. Keep their names exact, and
+   keep --seq-0..--seq-5 as 6-digit hex literals — hexToRgb() there does
+   parseInt(hex.replace("#",""), 16), so rgb()/oklch()/color-mix()/3-digit
+   shorthand would all break the heatmap. --series-1 must also stay a
+   plain colour, not a gradient: Chart.js takes it as a fill string.
+   ===================================================================== */
+:root {
+  color-scheme: light dark;
+  --page: #f9f9f7;
+  --surface-1: #fcfcfb;
+  --surface-2: #f2f1ec;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #6f6d67;
+  --border: #e1e0d9;
+
+  /* categorical slot 1 (brand teal) — the single-series bar charts. A fill
+     rather than text, so it targets the 3:1 non-text threshold, not 4.5:1;
+     that allows a lighter step here than --brand uses. */
+  --series-1: #0090a5;
+  /* categorical slot 6 (red) — "leaves" in the growth chart */
+  --series-6: #e34948;
+  /* status colors — reserved for the signed "net" bar / chart fills only */
+  --good: #0ca30c;
+  --critical: #d03b3b;
+
+  /* sequential teal ramp, low->high, for the activity heatmap on a light
+     surface. Monotonic in luminance so the ordering survives greyscale. */
+  --seq-0: #d4eff4;
+  --seq-1: #a6dee8;
+  --seq-2: #6fc9d9;
+  --seq-3: #29aec4;
+  --seq-4: #00849b;
+  --seq-5: #005567;
+
+  /* Brand teal #00A5BD. It measures 5.9:1 on the dark surface but only
+     2.9:1 on the light one, so light mode steps to a darker tone of the
+     same hue. --accent (links, buttons, focus) resolves to the same value
+     as --brand: the identity is one colour. They stay separate names so
+     interactive colour can diverge from the wordmark later without a
+     find-and-replace. */
+  --brand: #00758a;
+  --accent: #00758a;
+  --good-text: #0a7a0a;
+  --critical-text: #c93636;
+
+  /* Gradient used for accent edges, the wordmark, buttons and the XP bar.
+     CSS-only — never fed to Chart.js. */
+  --brand-grad: linear-gradient(135deg, #00a5bd 0%, #00758a 100%);
+
+  /* highlight for "this is you" table rows — kept independent of the
+     heatmap ramp (--seq-0) so the leaderboard isn't coupled to it */
+  --row-highlight: #e2f4f7;
+
+  /* elevation */
+  --shadow-1: 0 1px 2px rgba(16, 40, 46, .06), 0 1px 3px rgba(16, 40, 46, .04);
+  --shadow-2: 0 4px 12px rgba(16, 40, 46, .08), 0 2px 4px rgba(16, 40, 46, .05);
+  --shadow-brand: 0 4px 14px rgba(0, 133, 155, .28);
+
+  /* spacing scale */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.5rem;
+
+  /* radius scale */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --surface-2: #232322;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8e8c86;
+    --border: #2c2c2a;
+
+    --series-1: #00a5bd;
+    --series-6: #e66767;
+    --good: #0ca30c;
+    --critical: #d03b3b;
+
+    /* inverted direction: zero recedes toward the dark surface, max is the
+       brightest/most-contrasting step against it */
+    --seq-0: #0a3d47;
+    --seq-1: #0d4d5a;
+    --seq-2: #11616f;
+    --seq-3: #007d92;
+    --seq-4: #00a5bd;
+    --seq-5: #4fc9db;
+
+    /* the teal is used as given here — 5.9:1 on --surface-1. --critical
+       (#d03b3b) is only 3.6:1 on it, so badge text takes the lighter red
+       that dark --series-6 already establishes. */
+    --brand: #00a5bd;
+    --accent: #00a5bd;
+    --good-text: #0ca30c;
+    --critical-text: #e66767;
+
+    --brand-grad: linear-gradient(135deg, #23c3da 0%, #00a5bd 100%);
+
+    --row-highlight: #10333c;
+
+    /* shadows read as noise on a dark surface; keep them tight and lean on
+       the border for separation instead */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .5);
+    --shadow-2: 0 6px 18px rgba(0, 0, 0, .55);
+    --shadow-brand: 0 4px 16px rgba(0, 165, 189, .25);
+  }
+}
+
+/* =====================================================================
+   Reset & base
+   ===================================================================== */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: .95rem;
+  line-height: 1.6;
+  background: var(--page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* =====================================================================
+   Layout
+   ===================================================================== */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+/* Wrapper for any table wider than its container — scrolls the table, not
+   the page. Keep `main`'s own overflow-x unset so a stray wide element
+   elsewhere can't drag the whole page sideways again. */
+.table-scroll {
+  overflow-x: auto;
+}
+.activity {
+  overflow-x: auto;
+}
+
+/* =====================================================================
+   Typography
+   ===================================================================== */
+h1 {
+  font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  margin: 0 0 var(--space-5);
+  color: var(--text-primary);
+}
+/* Content section headings carry a small gradient rule, which is the main
+   repeating brand cue down a page. .panel/.chart-box headings opt out of
+   it below — inside a card the rule reads as clutter. */
+h2 {
+  position: relative;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  line-height: 1.3;
+  margin: var(--space-6) 0 var(--space-4);
+  padding-left: var(--space-3);
+  color: var(--text-primary);
+}
+h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .2em;
+  bottom: .2em;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-grad);
+}
+/* Chart captions (growth net total, heatmap peak) — distinct from
+   .progress-label, which annotates an actual progress bar. */
+.caption {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin: var(--space-2) 0 0;
+}
+.standing {
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: var(--space-5);
+}
+
+/* =====================================================================
+   Nav
+   ===================================================================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .topbar {
+    background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6);
+    backdrop-filter: blur(14px) saturate(1.6);
+  }
+}
+.topbar .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 750;
+  font-size: 1.02rem;
+  letter-spacing: -.02em;
+  color: var(--brand);
+  text-decoration: none;
+  margin-right: auto;
+}
+/* Small gradient mark to the left of the wordmark — gives the nav an
+   anchor without needing an image asset. */
+.topbar .brand::before {
+  content: "";
+  width: 9px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-grad);
+  box-shadow: var(--shadow-brand);
+}
+.topbar .user {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.topbar .navlink,
+.topbar .logout {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color .15s ease;
+}
+.topbar .navlink:hover,
+.topbar .logout:hover {
+  color: var(--brand);
+}
+
+/* Guild switcher — a <details> dropdown in the topbar, rendered by base.html
+   only when there's more than one guild to switch between. */
+.switcher {
+  position: relative;
+}
+.switcher summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-weight: 550;
+  font-size: .85rem;
+  transition: border-color .15s ease, color .15s ease;
+}
+.switcher summary::-webkit-details-marker {
+  display: none;
+}
+.switcher summary::after {
+  content: "▾";
+  margin-left: var(--space-1);
+  font-size: .7em;
+  color: var(--text-muted);
+}
+.switcher summary:hover {
+  border-color: var(--brand);
+  color: var(--text-primary);
+}
+.switcher[open] summary {
+  border-color: var(--brand);
+}
+.switcher ul {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: 20;
+  min-width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+.switcher li {
+  margin: 0;
+}
+.switcher a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: .88rem;
+  transition: background .12s ease;
+}
+.switcher a:hover {
+  background: var(--surface-2);
+}
+.switcher a[aria-current="page"] {
+  color: var(--brand);
+  font-weight: 650;
+}
+.switcher .guild-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Guild tab bar (_nav.html's guild_tabs macro) — the second topbar row,
+   rendered whenever a page has a `guild` in context. Joins the admin
+   (/guild/{id}) and member (/me/{id}) route trees into one nav. */
+.subnav {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: 0 var(--space-5);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 550;
+  font-size: .88rem;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color .15s ease, border-color .15s ease;
+}
+.tab:hover {
+  color: var(--text-primary);
+}
+.tab[aria-current="page"] {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+/* =====================================================================
+   Panels & cards
+   ===================================================================== */
+/* .panel / .panel-grid are the generic bordered-box grid used by table
+   pages (leaderboards, me, member). .chart-box / .charts are the same
+   shape under a chart-specific name, kept so dashboard.html — the one
+   page that actually draws charts into them — stays semantically
+   readable. Changing one visually changes both; that's intended. */
+.panel, .chart-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-1);
+}
+/* Panel headings are eyebrows, not section headings: small, uppercase,
+   tracked out, and without the gradient rule inherited from h2. */
+.panel h2, .chart-box h2 {
+  margin: 0 0 var(--space-4);
+  padding-left: 0;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--text-muted);
+}
+.panel h2::before, .chart-box h2::before {
+  content: none;
+}
+.panel-grid, .charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.guild-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.guild-list a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 550;
+  overflow: hidden;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+/* Accent edge that wipes in on hover — the server cards are the only
+   large click targets in the app, so they get the strongest affordance. */
+.guild-list a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--brand-grad);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform .18s ease;
+}
+.guild-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+/* 190px is the floor at which the widest real value ("10,210,553" at the
+   value size below) still fits on one line inside the card padding. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+/* Stat tiles: gradient top-edge, oversized tabular numerals, uppercase
+   label. These carry most of the "designed" weight on the dashboard. */
+.card {
+  position: relative;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--brand-grad);
+}
+.card .label {
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+}
+/* margin-top:auto pins every value to the bottom of its tile, so a label
+   that wraps to two lines ("Active members (30d)") doesn't push its number
+   out of line with the rest of the row. */
+.card .value {
+  margin-top: auto;
+  font-size: clamp(1.3rem, 1.1vw + .95rem, 1.6rem);
+  font-weight: 680;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: break-word;
+}
+
+/* Hero tiles (dashboard's Total messages / Active members / Trend row) carry
+   the most weight on the page — bigger numerals, more padding. Secondary
+   tiles are the opposite: same shape, quieter. Both are modifiers on the
+   existing .card, not a new component. */
+.card-hero .value {
+  font-size: clamp(1.9rem, 1.6vw + 1.3rem, 2.5rem);
+}
+.card-hero .label {
+  font-size: .74rem;
+}
+.card-sm {
+  padding: var(--space-4) var(--space-3) var(--space-3);
+}
+.card-sm .value {
+  font-size: clamp(1.05rem, .6vw + .9rem, 1.25rem);
+}
+
+/* The 30d trend delta — previously hidden in a title tooltip, now visible
+   text coloured with the same --good-text/--critical-text pair badges use. */
+.trend-delta {
+  font-size: .9rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.trend-up {
+  color: var(--good-text);
+}
+.trend-down {
+  color: var(--critical-text);
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-1);
+  box-shadow: 0 0 0 2px var(--brand), var(--shadow-2);
+  margin-bottom: var(--space-5);
+}
+
+/* =====================================================================
+   Tables
+   ===================================================================== */
+table.stat-table {
+  border-collapse: collapse;
+}
+/* Only the ranked leaderboards fill their panel. Key/value tables stay at
+   their natural width — stretched to 1100px the label and its value drift
+   to opposite edges and stop reading as a pair. */
+table.stat-table.lb-table {
+  width: 100%;
+}
+table.stat-table th, table.stat-table td {
+  text-align: left;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+table.stat-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+/* Key/value tables (me, member, moderation) put the label in a row-header
+   cell. Uppercase tracking suits a short column header but shouts on a
+   long row label ("Reactions given/received"), so rows that also contain a
+   <td> opt out. Engines without :has() just keep the uppercase treatment. */
+table.stat-table tr:has(td) > th {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: .95rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+table.stat-table tr > th:first-child:not(:only-child) + td {
+  font-weight: 550;
+}
+table.stat-table tbody tr:last-child th,
+table.stat-table tbody tr:last-child td {
+  border-bottom: none;
+}
+table.stat-table tbody tr {
+  transition: background .12s ease;
+}
+table.stat-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.lb-table tr.me td {
+  background: var(--row-highlight);
+  font-weight: 650;
+}
+.lb-table tr.me td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.lb-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: var(--space-2);
+  border: 1px solid var(--border);
+}
+
+/* Rank-medal — replaces the 🥇🥈🥉 emoji on leaderboards.html's top three
+   rows with a token-driven badge holding the numeral, so the # column stays
+   in tabular alignment and renders consistently across platforms/fonts. */
+.rank-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 50%;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.rank-medal-1 {
+  background: linear-gradient(135deg, #f2c355, #c99424);
+}
+.rank-medal-2 {
+  background: linear-gradient(135deg, #dde1e6, #a7adb6);
+}
+.rank-medal-3 {
+  background: linear-gradient(135deg, #dd9a63, #a9662f);
+}
+
+/* Bare "Top channels" lists (me.html, member.html) */
+.stat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.stat-list li {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.stat-list li:last-child {
+  border-bottom: none;
+}
+
+/* Quietest-members ranked list. Deliberately not a flex container: the
+   ordinals are the point of this page, and flex items only render their
+   ::marker in newer engines. */
+.rank-list {
+  padding-left: var(--space-5);
+  margin: 0;
+}
+.rank-list li {
+  padding: var(--space-1) 0;
+  margin-bottom: var(--space-1);
+}
+.rank-list li::marker {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Per-member warnings list nested inside a .stat-table <td> — without
+   this it inherits the browser's default 40px bullet indent inside the
+   cell. */
+.warn-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: .85rem;
+  color: var(--text-secondary);
+}
+.warn-list li {
+  margin-bottom: var(--space-1);
+}
+.warn-list li::marker {
+  color: var(--brand);
+}
+
+/* moderation.html's six top-level section wrappers, previously bare */
+.section {
+  margin-bottom: var(--space-6);
+}
+.section > h2:first-child {
+  margin-top: 0;
+}
+
+/* At-a-glance status strip above moderation.html's six detail sections. */
+.status-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+.status-item .label {
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+}
+.status-item .value {
+  font-size: 1.3rem;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================================
+   Charts & heatmap
+   ===================================================================== */
+/* Rounded, gapped cells rather than a hairline grid — reads as a
+   contribution graph. The JS writes an inline `background` per cell, which
+   still lands on top of this. */
+table.heatmap {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: .62rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+table.heatmap th {
+  width: 18px;
+  height: 18px;
+  text-align: center;
+  font-weight: 500;
+  border: none;
+  padding: 0;
+}
+table.heatmap td {
+  width: 18px;
+  height: 18px;
+  border: none;
+  padding: 0;
+  border-radius: var(--radius-sm);
+}
+
+/* Heatmap legend — built in dashboard.html from the same --seq-0..--seq-5
+   ramp sequentialColor() reads at render time; no new colour logic here. */
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  font-size: .72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.heat-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+/* Charts section header — houses the h2 and the period <select> together, so
+   the selector's scope (charts only, not the tiles above) is visually
+   obvious. Replaces the old standalone .period-selector section. */
+.charts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.charts-header h2 {
+  margin: 0;
+}
+.charts-header .period-selector {
+  margin-bottom: 0;
+}
+
+/* Bounded canvas height so the four chart boxes align in the 2-col grid
+   regardless of each dataset's natural aspect ratio — paired with
+   maintainAspectRatio: false in dashboard.js. Also the positioning context
+   for .chart-error and the loading skeleton below. */
+.chart-box, .activity {
+  position: relative;
+}
+.chart-canvas-wrap {
+  position: relative;
+  height: 260px;
+}
+
+/* Loading skeleton — dashboard.js adds .is-loading to a box's .chart-box (or
+   .activity, for the heatmap) while its fetch is in flight. The shimmer
+   animation is gated behind prefers-reduced-motion so the static fill is
+   the fallback for anyone who's asked to avoid motion. */
+.chart-box.is-loading canvas,
+.activity.is-loading table.heatmap {
+  visibility: hidden;
+}
+.chart-box.is-loading .chart-canvas-wrap,
+.activity.is-loading #activity-heatmap {
+  position: relative;
+  min-height: 120px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chart-box.is-loading .chart-canvas-wrap::after,
+  .activity.is-loading #activity-heatmap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .3), transparent);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.3s ease-in-out infinite;
+  }
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}
+
+/* Per-box error state (dashboard.js's showBoxError) — replaces a dead chart
+   with a message and a Retry button that re-runs only that box's fetch,
+   instead of one failed endpoint blanking all four. */
+.chart-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-4);
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
+}
+.chart-error p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .85rem;
+}
+.chart-error .chart-retry {
+  padding: var(--space-2) var(--space-4);
+  font-size: .8rem;
+  box-shadow: none;
+}
+
+/* =====================================================================
+   Components
+   ===================================================================== */
+/* Login / error hero. The gradient wordmark here is the one place the
+   brand runs at display size. */
+.login-card {
+  text-align: center;
+  max-width: 32rem;
+  margin: var(--space-6) auto 0;
+  padding: var(--space-6) var(--space-5);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+.login-card h1 {
+  font-size: clamp(2rem, 6vw, 2.9rem);
+  line-height: 1.1;
+  margin-bottom: var(--space-4);
+  color: var(--brand);
+}
+/* Gradient wordmark only where the clip is actually supported — without
+   the guard, an unsupporting engine paints transparent text on nothing. */
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .login-card h1 {
+    background: var(--brand-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+.login-card p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+/* Errors reuse the login card but not its display-size gradient wordmark —
+   at 2.9rem in brand colour a 403 reads like an announcement. */
+.error-card h1 {
+  font-size: clamp(1.35rem, 3.2vw, 1.7rem);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text-primary);
+}
+
+.button, a.button {
+  display: inline-block;
+  background: var(--brand-grad);
+  color: #fff;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-brand);
+  transition: filter .15s ease, transform .12s ease, box-shadow .15s ease;
+}
+.button:hover, a.button:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 20px rgba(0, 133, 155, .34);
+}
+.button:active, a.button:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-1);
+}
+
+.period-selector {
+  margin-bottom: var(--space-5);
+  color: var(--text-secondary);
+  font-size: .85rem;
+}
+.period-selector select {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: border-color .15s ease;
+}
+.period-selector select:hover {
+  border-color: var(--brand);
+}
+.period-selector select:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.progress {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-top: var(--space-3);
+}
+.progress-fill {
+  height: 100%;
+  background: var(--brand-grad);
+  border-radius: var(--radius-pill);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .progress-fill {
+    transition: width .4s cubic-bezier(.4, 0, .2, 1);
+  }
+}
+.progress-label {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin: var(--space-2) 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+}
+.badge-good {
+  color: var(--good-text);
+}
+.badge-critical {
+  color: var(--critical-text);
+}
+.badge-neutral {
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+.empty {
+  color: var(--text-muted);
+  font-size: .9rem;
+}
+/* In-content links: member names in tables (moderation warnings) and in the
+   quietest ranked list. Without this they fall back to the browser's default
+   blue, which is close to unreadable on the dark surface. */
+.stat-table a,
+.rank-list a,
+.stat-list a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 550;
+  transition: opacity .15s ease;
+}
+.stat-table a:hover,
+.rank-list a:hover,
+.stat-list a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* Hover lifts, grouped so the motion rules sit together */
+@media (prefers-reduced-motion: no-preference) {
+  .guild-list a:hover {
+    transform: translateY(-2px);
+  }
+}
+.guild-list a:hover {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-2);
+}
+.guild-list a:hover::before {
+  transform: scaleY(1);
+}
+.card:hover {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-2);
+}
+
+/* =====================================================================
+   Media queries
+   ===================================================================== */
+@media (max-width: 640px) {
+  main {
+    padding: var(--space-4) var(--space-3);
+  }
+  .topbar {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+  /* Tab bar collapses to a horizontal scroller rather than wrapping — with
+     five possible tabs, wrapping would push page content down unpredictably
+     depending on which tabs a given user can see. */
+  .subnav {
+    padding: 0 var(--space-3);
+    -webkit-overflow-scrolling: touch;
+  }
+  .switcher ul {
+    left: auto;
+    right: 0;
+  }
+  .panel-grid, .charts {
+    grid-template-columns: 1fr;
+  }
+  .cards {
+    grid-template-columns: repeat(auto-fit, minmax(134px, 1fr));
+  }
+  /* Hero row (Total messages / Active members / Trend) drops to one column
+     so the biggest numerals on the page get full width instead of being
+     squeezed three-up. Engines without :has() just keep the auto-fit grid. */
+  .cards:has(.card-hero) {
+    grid-template-columns: 1fr;
+  }
+  .card .value {
+    font-size: 1.45rem;
+  }
+  .card-hero .value {
+    font-size: 1.9rem;
+  }
+  .panel, .chart-box {
+    padding: var(--space-4);
+  }
+  .charts-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .login-card {
+    padding: var(--space-5) var(--space-4);
+  }
+  h2 {
+    margin-top: var(--space-5);
+  }
+}

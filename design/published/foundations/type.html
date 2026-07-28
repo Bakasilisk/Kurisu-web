@@ -1,0 +1,63 @@
+<!-- @dsCard group="Foundations" name="Typography" subtitle="Inter Variable; fluid h1, ruled h2, eyebrow headings, tabular numerals" viewport="820x900" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Typography</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css. */
+.demo { max-width: 780px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3); padding-left: 0;
+}
+.demo-head:first-child { margin-top: 0; }
+.spec { font-size: .72rem; color: var(--text-muted); font-family: ui-monospace, "SF Mono", Menlo, monospace; margin: var(--space-1) 0 var(--space-4); }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; }
+.nums { font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 680; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Family</div>
+<p>Inter Variable, self-hosted from <code>/static/vendor/inter-var.woff2</code> — no CDN at runtime, same policy as the vendored Chart.js. <code>font-display: swap</code>, so a slow font never blocks first paint.</p>
+<p class="spec">"Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif</p>
+<p class="note">These previews render on the fallback stack — the woff2 lives in the app, not in this project. Weights and metrics shift slightly here; the layout is metric-tolerant either way.</p>
+
+<div class="demo-head">Page heading</div>
+<h1>Kurisu server dashboard</h1>
+<p class="spec">h1 · clamp(1.6rem, 3.5vw, 2.1rem) · 700 · -.02em · 1.2</p>
+
+<div class="demo-head">Section heading</div>
+<h2>Leaderboards</h2>
+<p class="spec">h2 · 1.15rem · 650 · -.01em · 3px gradient rule via ::before</p>
+<p class="note">The gradient rule is the main repeating brand cue down a page. Headings inside a <code>.panel</code> or <code>.chart-box</code> opt out of it — within a card the rule reads as clutter.</p>
+
+<div class="demo-head">Eyebrow heading — inside panels</div>
+<div class="panel" style="max-width:320px">
+  <h2>Message volume</h2>
+  <p style="margin:0;color:var(--text-secondary)">Panel and chart-box headings drop the rule and go small, uppercase, tracked out.</p>
+</div>
+<p class="spec">.panel h2 · .72rem · 600 · .09em · --text-muted</p>
+
+<div class="demo-head">Body</div>
+<p>Body copy runs at <code>.95rem</code> on a <code>1.6</code> line-height, antialiased, with <code>text-rendering: optimizeLegibility</code>. Long-form prose is rare in this app — most text is a label, a number, or a table cell — so the base size is tuned for density rather than reading comfort.</p>
+<p class="standing">.standing — the summary line under a page heading, at 500 weight in secondary text.</p>
+<p class="caption">.caption — chart annotations like a growth net total or a heatmap peak, at .8rem in muted text.</p>
+
+<div class="demo-head">Numerals</div>
+<p class="nums">10,210,553 &nbsp; 8,402,119 &nbsp; 1,337,000</p>
+<p class="spec">font-variant-numeric: tabular-nums · applied to .card .value, all table cells, ::marker, .progress-label</p>
+<p class="note">Every number in the app is tabular. Ranked lists and stat tiles put figures in vertical proximity, and proportional digits make columns of them visibly ragged.</p>
+
+<div class="demo-head">Uppercase micro-labels</div>
+<p class="spec">.card .label · .68rem · 600 · .08em&nbsp;&nbsp;|&nbsp;&nbsp;table th · .72rem · 600 · .07em&nbsp;&nbsp;|&nbsp;&nbsp;.badge · .72rem · 600 · .02em</p>
+<p class="note">Uppercase tracking suits a short column header but shouts on a long row label — so key/value tables opt their row-header cells out via <code>tr:has(td) &gt; th</code>, falling back to the uppercase treatment on engines without <code>:has()</code>.</p>
+
+</main>
+</body>
+</html>

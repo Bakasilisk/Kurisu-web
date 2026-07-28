@@ -1,0 +1,71 @@
+<!-- @dsCard group="Foundations" name="Layout & scales" subtitle="6-step spacing, 4 radii, 3 elevations, 1100px column" viewport="820x900" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kurisu-web — Layout &amp; scales</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+/* Demo scaffolding only — everything visual comes from ../styles.css. */
+.demo { max-width: 780px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.demo-head {
+  font-size: .72rem; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: var(--space-6) 0 var(--space-3);
+}
+.demo-head:first-child { margin-top: 0; }
+.scale { display: grid; gap: var(--space-2); }
+.scale-row { display: flex; align-items: center; gap: var(--space-3); font-size: .78rem; }
+.scale-row code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .72rem; width: 8rem; flex: none; }
+.scale-row .val { color: var(--text-muted); width: 4rem; flex: none; font-family: ui-monospace, Menlo, monospace; font-size: .7rem; }
+.bar { height: 16px; background: var(--brand-grad); border-radius: var(--radius-sm); }
+.radii { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.radii div { width: 84px; height: 62px; background: var(--surface-2); border: 1px solid var(--border); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: .66rem; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
+.elevs { display: flex; gap: var(--space-5); flex-wrap: wrap; }
+.elev { width: 150px; height: 78px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: .68rem; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
+.note { font-size: .8rem; color: var(--text-secondary); max-width: 66ch; margin-top: var(--space-3); }
+.col { border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: var(--space-4); text-align: center; font-size: .74rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<main class="demo">
+
+<div class="demo-head">Spacing</div>
+<div class="scale">
+  <div class="scale-row"><code>--space-1</code><span class="val">.25rem</span><span class="bar" style="width:4px"></span></div>
+  <div class="scale-row"><code>--space-2</code><span class="val">.5rem</span><span class="bar" style="width:8px"></span></div>
+  <div class="scale-row"><code>--space-3</code><span class="val">.75rem</span><span class="bar" style="width:12px"></span></div>
+  <div class="scale-row"><code>--space-4</code><span class="val">1rem</span><span class="bar" style="width:16px"></span></div>
+  <div class="scale-row"><code>--space-5</code><span class="val">1.5rem</span><span class="bar" style="width:24px"></span></div>
+  <div class="scale-row"><code>--space-6</code><span class="val">2.5rem</span><span class="bar" style="width:40px"></span></div>
+</div>
+<p class="note">Six steps, no half-values. <code>--space-5</code> is the workhorse — panel padding, grid gaps, and the gap between a heading and what follows. <code>--space-6</code> is reserved for separating top-level sections.</p>
+
+<div class="demo-head">Radius</div>
+<div class="radii">
+  <div style="border-radius:var(--radius-sm)">sm · 4px</div>
+  <div style="border-radius:var(--radius-md)">md · 8px</div>
+  <div style="border-radius:var(--radius-lg)">lg · 14px</div>
+  <div style="border-radius:var(--radius-pill)">pill · 999px</div>
+</div>
+<p class="note"><code>lg</code> is the card radius — panels, stat tiles, server cards, the login hero. <code>pill</code> covers buttons, badges, progress bars and the small gradient marks. <code>sm</code> is for heatmap cells and focus rings; <code>md</code> appears only on the period selector.</p>
+
+<div class="demo-head">Elevation</div>
+<div class="elevs">
+  <div class="elev" style="box-shadow:var(--shadow-1)">--shadow-1</div>
+  <div class="elev" style="box-shadow:var(--shadow-2)">--shadow-2</div>
+  <div class="elev" style="box-shadow:var(--shadow-brand)">--shadow-brand</div>
+</div>
+<p class="note">Shadows are tinted toward the brand hue rather than neutral black. In dark mode they read as noise, so they tighten sharply and the border carries separation instead. <code>--shadow-1</code> is the resting card state, <code>--shadow-2</code> the hover lift, <code>--shadow-brand</code> the glow under buttons and the nav mark.</p>
+
+<div class="demo-head">Page column</div>
+<div class="col">main · max-width 1100px · centered · padding --space-5 (--space-4 / --space-3 under 640px)</div>
+<p class="note">Wide tables scroll inside a <code>.table-scroll</code> wrapper rather than widening the page; <code>main</code>'s own <code>overflow-x</code> stays unset so one stray wide element can't drag the whole layout sideways.</p>
+
+<div class="demo-head">Grid breakpoints</div>
+<p class="note"><code>.panel-grid</code> and <code>.charts</code> auto-fit at a 320px minimum; <code>.cards</code> at 190px — the floor at which the widest real value ("10,210,553") still fits on one line inside the tile padding. <code>.guild-list</code> auto-fills at 220px. Below 640px the panel and chart grids collapse to a single column and the stat tiles drop to a 134px minimum.</p>
+
+</main>
+</body>
+</html>
