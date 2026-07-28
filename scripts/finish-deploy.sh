@@ -3,9 +3,10 @@
 # was last pulled, pushes any local commits, and offers to delete remote
 # branches that are already merged into main.
 #
-# This exists because the steps in it need a sudo password and GitHub
-# credentials, neither of which is available non-interactively on the box —
-# so it has to be run by hand rather than by an agent or a hook.
+# It still has to be run by hand rather than by an agent or a hook: the
+# restart needs a sudo password, and the prune asks before it deletes
+# anything. GitHub auth is no longer part of that — the deploy key wired up
+# in preflight means the push doesn't stop to ask for credentials.
 #
 # Safe to re-run: every step checks whether it's already been done.
 set -euo pipefail
@@ -40,6 +41,46 @@ ok "Working tree clean"
 [[ "$(git config --get core.fileMode)" == "false" ]] \
   && ok "core.fileMode=false (chmod noise ignored)" \
   || warn "core.fileMode is not false — a chmod -R 777 will block the next pull"
+
+# Both the push and the branch prune talk to GitHub. This box has no gh CLI
+# and no credential helper, so over HTTPS git stops to ask for a username and
+# a PAT — neither of which an unattended run can answer. Pointing it at a
+# deploy key is what makes those steps go through. IdentitiesOnly stops ssh
+# from offering every ~/.ssh/id_* first and being rejected before it ever
+# gets to this one.
+DEPLOY_KEY="${DEPLOY_KEY:-/home/kurisu/.ssh/git_ed25519}"
+
+if [[ -r "$DEPLOY_KEY" ]]; then
+  # The same chmod -R 777 sweep noted above also lands on the key, and ssh
+  # flatly refuses a private key that's group- or world-readable. That needs
+  # re-tightening rather than just reporting — but only we can do it if we
+  # own the file, so otherwise say so and let ssh's own error explain.
+  KEY_MODE="$(stat -c '%a' "$DEPLOY_KEY")"
+  if [[ "$KEY_MODE" != "600" ]]; then
+    if [[ -O "$DEPLOY_KEY" ]] && chmod 600 "$DEPLOY_KEY"; then
+      ok "Re-tightened $DEPLOY_KEY from $KEY_MODE to 600 (ssh rejects looser modes)"
+    else
+      warn "$DEPLOY_KEY is mode $KEY_MODE and owned by $(stat -c '%U' "$DEPLOY_KEY"), not $(id -un)"
+      warn "  ssh will refuse it; chmod 600 it as its owner"
+    fi
+  fi
+  # Exported even when the mode check above failed: ssh's own refusal is the
+  # clearer error to fail on, and saying "Deploy key ..." in green right under
+  # a warning that it won't work would just be confusing.
+  export GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes"
+  [[ "$(stat -c '%a' "$DEPLOY_KEY")" == "600" ]] && ok "Deploy key $DEPLOY_KEY"
+else
+  warn "No readable deploy key at $DEPLOY_KEY — falling back to ssh's own defaults"
+fi
+
+# A key is no use while origin still points at https://; git wouldn't touch
+# ssh at all and would go back to asking for a PAT.
+if [[ "$(git remote get-url origin)" == https://* ]]; then
+  warn "origin is an HTTPS URL, so the deploy key won't be used:"
+  warn "  git remote set-url origin git@github.com:Bakasilisk/Kurisu-web.git"
+else
+  ok "origin is $(git remote get-url origin)"
+fi
 
 # --------------------------------------------------------------- dependencies
 say "Dependencies"
@@ -108,8 +149,7 @@ if [[ "$AHEAD" -eq 0 ]]; then
 else
   echo "    $AHEAD commit(s) to push:"
   git log --oneline origin/main..HEAD | sed 's/^/      /'
-  # Prompts for a GitHub username and personal access token — this box has no
-  # gh CLI and no credential helper configured.
+  # Authenticated by the deploy key set up in preflight, via GIT_SSH_COMMAND.
   git push origin main
   ok "Pushed"
 fi
