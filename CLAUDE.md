@@ -111,13 +111,30 @@ Bump the `?v=` on `style.css` in `base.html` when the CSS changes.
 
 ## Deploying
 
-This dev machine is **not** the server. `scripts/finish-deploy.sh` runs on the
-server host, and it restarts but does not pull:
+**This checkout is the server.** `kurisu-web.service` runs
+`.venv/bin/python run.py` with `WorkingDirectory` pointing at this working
+tree, so an edit here goes live the moment the service restarts — there is no
+separate deploy target to copy to. The bot it reads over localhost is the
+sibling checkout `../Kurisu`, running as `kurisu.service` on the same host.
+
+If you are ever unsure whether the host you're on is the server, ask it:
 
 ```bash
-git pull origin main
+systemctl show kurisu-web -p WorkingDirectory   # empty/absent => not the server
+```
+
+`scripts/finish-deploy.sh` is the whole flow, in this order: refuse to run on a
+dirty tree → sync the venv to `requirements.txt` → restart the service →
+**then** push to origin. So origin only ever receives a commit that has already
+come back up here.
+
+```bash
 ./scripts/finish-deploy.sh    # prompts for sudo to restart kurisu-web
 ```
+
+It restarts but never pulls. Commits authored on another machine need a
+`git pull origin main` first; commits authored here don't — the script pushes
+them for you.
 
 Safe to re-run; it asks before pruning merged branches, and prints a rollback
 command if the restart fails.
