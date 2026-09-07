@@ -96,7 +96,7 @@
 
 <section class="section">
   <h2>Palantir</h2>
-  <p class="empty">Configuration and cached-message count only — no message content is exposed.</p>
+  <p class="empty">Configuration and cached-message count only — no message content is exposed from Palantir's cache.</p>
   <table class="stat-table">
     <tr><th>Log channel</th><td>{{ ("#" ~ palantir.log_channel.name) if palantir.log_channel else "not set" }}</td></tr>
     <tr><th>Archive attachments</th><td>{{ "yes" if palantir.archive_attachments else "no" }}</td></tr>
@@ -119,4 +119,45 @@
   </table>
   </div>
 </section>
+
+<section class="section" id="export" data-gid="{{ guild.id }}">
+  <h2>Message export</h2>
+  <p class="empty">
+    Exports the last 7 days of messages from every channel and thread the bot can read, as a CSV
+    with columns timestamp, channel, author, content, message ID, and attachment links — it
+    contains message content, so handle the download accordingly. This is the only page that
+    moves message content through this app: it is streamed live from Discord via the bot and
+    never stored here. A finished export stays downloadable for 60 minutes; attachment links in it
+    expire after roughly 24 hours, a Discord limit rather than this app's.
+  </p>
+  <div id="export-status" data-state="{{ export_job.state }}">
+    {% if export_job.state == "idle" %}
+    <span class="badge badge-neutral">Idle</span>
+    <p class="empty">No export has been run recently.</p>
+    {% elif export_job.state == "running" %}
+    <span class="badge badge-neutral">Running</span>
+    <p class="empty">{{ export_job.sources_scanned }} sources scanned, {{ export_job.sources_skipped }} skipped, {{ "{:,}".format(export_job.messages) }} messages so far…</p>
+    {% elif export_job.state == "done" %}
+    <span class="badge badge-good">Done</span>
+    <p class="empty">{{ "{:,}".format(export_job.messages) }} messages, {{ export_job.bytes | human_bytes }} — finished {{ export_job.finished_at[:16] | replace('T', ' ') }}.</p>
+    {% elif export_job.state == "error" %}
+    <span class="badge badge-critical">Error</span>
+    <p class="empty">{{ export_job.error }}</p>
+    {% else %}
+    <span class="badge badge-critical">Unavailable</span>
+    <p class="empty">The export service is unavailable right now.</p>
+    {% endif %}
+  </div>
+  <div class="export-actions">
+    <button type="button" class="button" id="export-start"
+      {% if export_job.state in ("running", "unavailable") %}disabled{% endif %}>Start export</button>
+    {% if export_job.state == "done" %}
+    <a class="button" id="export-download" href="/guild/{{ guild.id }}/export.csv">Download CSV</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/export.js?v=1"></script>
+<script>initExport("{{ guild.id }}");</script>
 {% endblock %}

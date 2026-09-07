@@ -16,9 +16,11 @@ def _params(**kwargs) -> dict:
 
 
 class BotAPIClient:
-    """Thin wrapper around the bot's read-only HTTP API — attaches X-API-Key,
-    reuses one shared httpx.AsyncClient for the app's lifetime (created/closed
-    in main.py's lifespan, not per-request)."""
+    """Thin wrapper around the bot's HTTP API — attaches X-API-Key, reuses one
+    shared httpx.AsyncClient for the app's lifetime (created/closed in
+    main.py's lifespan, not per-request). Mostly read-only, except the export
+    endpoints (_post, export_start), which kick off a background job on the
+    bot."""
 
     def __init__(self, client: httpx.AsyncClient, base_url: str = BOT_API_BASE, api_key: str = WEBAPI_KEY):
         self._client = client
@@ -36,8 +38,30 @@ class BotAPIClient:
             raise BotAPIError("not_found")
         if resp.status_code == 401:
             raise BotAPIError("unauthorized")
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise BotAPIError("unavailable" if resp.status_code == 503 else str(e)) from e
         return resp.json()
+
+    async def _post(self, path: str, json: dict) -> tuple[int, dict]:
+        """POST helper for the export endpoints. Unlike _get, the caller (a
+        route handler) needs the status code too: 400/403/409 are expected,
+        meaningful responses meant to be passed through to the browser, not
+        failures to swallow into a BotAPIError."""
+        try:
+            resp = await self._client.post(
+                f"{self._base_url}{path}", json=json, headers=self._headers, timeout=10.0
+            )
+        except httpx.HTTPError as e:
+            raise BotAPIError(str(e)) from e
+        if resp.status_code == 404:
+            raise BotAPIError("not_found")
+        if resp.status_code == 401:
+            raise BotAPIError("unauthorized")
+        if resp.status_code == 503:
+            raise BotAPIError("unavailable")
+        return resp.status_code, resp.json()
 
     async def meta(self) -> dict:
         return await self._get("/api/meta")
@@ -95,3 +119,34 @@ class BotAPIClient:
 
     async def user_reminders(self, uid: str) -> dict:
         return await self._get(f"/api/users/{uid}/reminders")
+
+    async def export_status(self, gid: str) -> dict:
+        return await self._get(f"/api/guilds/{gid}/export")
+
+    async def export_start(self, gid: str, requested_by: str) -> tuple[int, dict]:
+        return await self._post(f"/api/guilds/{gid}/export", {"requested_by": requested_by})
+
+    async def export_download(self, gid: str) -> tuple[bytes, str | None]:
+        """Not streamed (unlike a proxy that might sit in front of a much
+        bigger upstream): the payload is bot-side capped bytes on the same
+        host, so a plain buffered GET is simpler than send(stream=True) +
+        StreamingResponse/BackgroundTask."""
+        try:
+            resp = await self._client.get(
+                f"{self._base_url}/api/guilds/{gid}/export/download",
+                headers=self._headers,
+                timeout=httpx.Timeout(10.0, read=120.0),
+            )
+        except httpx.HTTPError as e:
+            raise BotAPIError(str(e)) from e
+        if resp.status_code == 404:
+            raise BotAPIError("not_found")
+        if resp.status_code == 401:
+            raise BotAPIError("unauthorized")
+        if resp.status_code == 503:
+            raise BotAPIError("unavailable")
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise BotAPIError(str(e)) from e
+        return resp.content, resp.headers.get("content-disposition")

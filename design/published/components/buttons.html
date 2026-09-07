@@ -28,7 +28,14 @@
   <a href="#" class="button">Sign in with Discord</a>
   <button type="button" class="button">Refresh</button>
 </div>
-<p class="note">One button, one treatment — a gradient pill on <code>--brand-grad</code> with white text and <code>--shadow-brand</code> beneath it, plus an <code>inset 0 1px 0</code> white highlight along the top edge so the pill reads as lit rather than flat. There is no secondary or ghost variant, because the app never puts two actions side by side: the only buttons are the login CTA and the error-page return link. Hover brightens 6% and deepens the glow; active drops 1px and collapses the shadow to <code>--shadow-1</code>.</p>
+<p class="note">One button, one treatment — a gradient pill on <code>--brand-grad</code> with white text and <code>--shadow-brand</code> beneath it, plus an <code>inset 0 1px 0</code> white highlight along the top edge so the pill reads as lit rather than flat. Still no secondary or ghost variant. Hover brightens 6% and deepens the glow; active drops 1px and collapses the shadow to <code>--shadow-1</code>.</p>
+
+<div class="demo-head">Disabled &amp; paired actions</div>
+<div class="row">
+  <button type="button" class="button" disabled>Start export</button>
+  <a href="#" class="button">Download CSV</a>
+</div>
+<p class="note">The export card on the moderation page (the first place two buttons sit side by side, and the first disabled state) reuses this one treatment rather than adding a variant: <code>opacity: .55</code>, <code>cursor: not-allowed</code>, and the active-state's <code>transform: none</code>, with hover's brighten/glow reset back to the resting <code>--shadow-brand</code> so a disabled button doesn't light up on mouseover with nothing to click. <code>.export-actions</code> is a plain flex row at <code>gap: var(--space-3)</code> — no new spacing idea, same gap this row demo uses.</p>
 
 <div class="demo-head">Badges</div>
 <div class="row">

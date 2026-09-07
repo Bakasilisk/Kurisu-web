@@ -1284,6 +1284,28 @@ table.heatmap td:hover {
   transform: translateY(1px);
   box-shadow: var(--shadow-1);
 }
+/* export.js's Start button while a job is running/unavailable. Hover still
+   matches :disabled in CSS (unlike click), so its brightness/glow bump is
+   reset back to the resting box-shadow or a disabled button visibly "lights
+   up" on mouseover with nothing to click. */
+.button:disabled, a.button:disabled, .button[disabled], a.button[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+}
+.button:disabled:hover, a.button:disabled:hover,
+.button[disabled]:hover, a.button[disabled]:hover {
+  filter: none;
+  box-shadow: var(--shadow-brand), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+
+/* moderation.html's export card: Start button + conditional Download link. */
+.export-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+}
 
 .period-selector {
   margin-bottom: var(--space-5);

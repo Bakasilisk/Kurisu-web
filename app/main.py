@@ -51,6 +51,20 @@ def _total_xp_for_level(level: int) -> int:  # mirrors Kurisu cogs/leveling.py c
     return 25 * level * (level + 1)
 
 
+def _human_bytes(n: int | None) -> str:
+    """KB/MB rendering for the export card's server-rendered "done" state.
+    export.js re-derives the same thing client-side for polled updates —
+    small enough that duplicating it beats a round-trip for formatting."""
+    if not n:
+        return "0 B"
+    size = float(n)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} GB"
+
+
 def _level_progress(xp: int, level: int) -> dict:
     start = _total_xp_for_level(level)
     nxt = _total_xp_for_level(level + 1)
@@ -74,11 +88,14 @@ app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, https_only=True
 BASE_DIR = os.path.dirname(__file__)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates.env.filters["human_bytes"] = _human_bytes
 
 _ERROR_TEXT = {
     403: ("You don't have access to this server",
           "Ask a server admin if you think you should."),
     404: ("Not found", "That page or member doesn't exist."),
+    410: ("No export available",
+          "No finished export — it may have expired or the bot restarted."),
     502: ("The bot is unreachable right now",
           "It may be restarting — try again in a moment."),
 }
@@ -470,6 +487,13 @@ async def moderation_page(request: Request, gid: str):
         )
     except BotAPIError:
         raise HTTPException(status_code=502, detail="bot API unavailable")
+    # Fetched separately from the gather above: an export-status hiccup (the
+    # bot's Export cog not loaded, say) must not blank the rest of the
+    # moderation page — the card just renders its own "unavailable" state.
+    try:
+        export_job = await bot_api.export_status(gid)
+    except BotAPIError:
+        export_job = {"state": "unavailable"}
     guild, switcher = await _guild_nav(bot_api, request, gid)
     return templates.TemplateResponse(
         request, "moderation.html",
@@ -481,5 +505,72 @@ async def moderation_page(request: Request, gid: str):
             palantir=palantir,
             moderation=moderation,
             features=features.get("cogs", []),
+            export_job=export_job,
         ),
+    )
+
+
+@app.get("/guild/{gid}/data/export")
+async def data_export_status(request: Request, gid: str):
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    bot_api = request.app.state.bot_api
+    try:
+        job = await bot_api.export_status(gid)
+    except BotAPIError as e:
+        if str(e) == "unavailable":
+            return JSONResponse({"state": "unavailable"})
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    return JSONResponse(job)
+
+
+@app.post("/guild/{gid}/data/export")
+async def data_export_start(request: Request, gid: str):
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    # CSRF guard: this is the app's first POST route, so there's no prior
+    # idiom to match here (every other mutation-shaped thing is a GET that
+    # merely reads). A custom header forces a CORS preflight this app never
+    # answers, so a bare cross-site <form> or fetch() can't attach it — that
+    # stands in for a token, on top of the session cookie already being
+    # SameSite=Lax + Secure.
+    if request.headers.get("x-requested-with") != "fetch":
+        raise HTTPException(status_code=400, detail="bad request")
+    # Self-scoping, same rule as everywhere else in this file: the requester
+    # id is always the signed session's own, never taken from the body.
+    uid = request.session["user"]["id"]
+    bot_api = request.app.state.bot_api
+    try:
+        status, payload = await bot_api.export_start(gid, uid)
+    except BotAPIError as e:
+        if str(e) == "unavailable":
+            return JSONResponse({"state": "unavailable"}, status_code=503)
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    logger.info("export start | guild=%s user=%s status=%s", gid, uid, status)
+    return JSONResponse(payload, status_code=status)
+
+
+@app.get("/guild/{gid}/export.csv")
+async def export_csv(request: Request, gid: str):
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    uid = request.session["user"]["id"]
+    bot_api = request.app.state.bot_api
+    try:
+        data, content_disposition = await bot_api.export_download(gid)
+    except BotAPIError as e:
+        if str(e) == "not_found":
+            raise HTTPException(
+                status_code=410,
+                detail="No finished export — it may have expired or the bot restarted.",
+            )
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    logger.info("export download | guild=%s user=%s", gid, uid)
+    return Response(
+        content=data,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": content_disposition or 'attachment; filename="export.csv"'},
     )

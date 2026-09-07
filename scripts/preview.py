@@ -52,6 +52,20 @@ CHROME_CANDIDATES = [
 ]
 
 
+def _human_bytes(n: int | None) -> str:
+    """Local copy of app/main.py's human_bytes filter — preview.py builds its
+    own bare Jinja2 Environment rather than importing app.main (which would
+    need SESSION_SECRET etc.), so the filter has to be registered here too."""
+    if not n:
+        return "0 B"
+    size = float(n)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} GB"
+
+
 class Ctx(dict):
     """dict that also answers attribute access, so templates can use `a.b.c`
     the same way they do with the bot API's parsed JSON."""
@@ -188,7 +202,44 @@ def pages() -> dict[str, dict]:
                           ("moderation", True, False), ("palantir", False, False),
                           ("music", False, True),
                       ]],
+            # Finished export: Download link shown, Start button enabled again.
+            export_job=c(
+                state="done", guild_id="123", requested_by="1", origin="web",
+                started_at="2026-07-20T14:02:11+00:00",
+                finished_at="2026-07-20T14:09:32+00:00",
+                expires_at="2026-07-20T15:09:32+00:00",
+                sources_scanned=42, sources_skipped=3, messages=8_812,
+                bytes=1_842_004, filename="export-123-20260720T1409Z.csv", error=None,
+            ),
         ),
+        # Running variant of the same page — Start button disabled, no
+        # Download link, and export.js's poller has something to talk to
+        # (see FETCH_STUB's "export" route below).
+        "moderation_export_running.html": ("moderation.html", shell(
+            nav_active="moderation",
+            warnings=[],
+            moderation=c(mod_log_channel=c(name="mod-log"), locked_channels=[]),
+            security=c(mode="active",
+                       lockdown=c(active=False, stay_locked=False, remaining_seconds=0),
+                       exempt_roles=3, exempt_users=1, protected_roles=2,
+                       log_channel=c(name="security-log")),
+            verification=c(granter_role=c(name="Verifier"), target_role=c(name="Member"),
+                           welcome_channel=c(name="welcome"), welcome_enabled=True),
+            palantir=c(log_channel=c(name="palantir"), archive_attachments=True,
+                       muted_categories=["voice"], cached_messages=402_113),
+            features=[c(name=name, enabled=enabled, globally_disabled=gone)
+                      for name, enabled, gone in [
+                          ("leveling", True, False), ("economy", True, False),
+                          ("moderation", True, False), ("palantir", False, False),
+                          ("music", False, True),
+                      ]],
+            export_job=c(
+                state="running", guild_id="123", requested_by="1", origin="web",
+                started_at="2026-07-20T14:02:11+00:00", finished_at=None,
+                expires_at=None, sources_scanned=18, sources_skipped=1,
+                messages=3_402, bytes=None, filename=None, error=None,
+            ),
+        )),
     }
 
 
@@ -210,6 +261,16 @@ FETCH_STUB = """
         Math.round(Math.max(0, Math.sin((h - 6) / 24 * Math.PI) * 100 * (1 + wd / 8))) + (h * wd) % 17)),
       weekday_labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
       total: 48100, peak_weekday: 5, peak_hour: 21
+    },
+    // Only exercised by moderation_export_running.html: export.js polls this
+    // on load (data-state="running") so the page shows a live-looking poll
+    // instead of a 404 in the console. Kept "running" forever here — it's a
+    // static fixture, not a real job — so the visual stays put across shots.
+    export: {
+      state: "running", guild_id: "123", requested_by: "1", origin: "web",
+      started_at: "2026-07-20T14:02:11+00:00", finished_at: null, expires_at: null,
+      sources_scanned: 18, sources_skipped: 1, messages: 3402, bytes: null,
+      filename: null, error: null
     }
   };
   window.fetch = (url) => {
@@ -231,7 +292,9 @@ def render(env: Environment) -> list[str]:
     for out_name, spec in pages().items():
         template_name, ctx = spec if isinstance(spec, tuple) else (out_name, spec)
         html = env.get_template(template_name).render(**ctx)
-        if template_name == "dashboard.html":
+        # dashboard.html needs its five chart boxes fed; moderation.html (both
+        # variants) needs the "export" route for export.js's polling.
+        if template_name in ("dashboard.html", "moderation.html"):
             html = html.replace("</head>", stub + "</head>")
 
         base = out_name[:-5]  # strip .html
@@ -284,7 +347,9 @@ def serve_background() -> socketserver.TCPServer:
 def screenshot(chrome: str) -> None:
     os.makedirs(SHOTS, exist_ok=True)
     # Only the pages worth eyeballing — every template is still rendered.
-    for page in ["dashboard", "leaderboards", "me", "moderation", "picker", "login"]:
+    # moderation_export_running sits alongside moderation so both states of
+    # the export card (done / running) get looked at, not just the default.
+    for page in ["dashboard", "leaderboards", "me", "moderation", "moderation_export_running", "picker", "login"]:
         for theme in THEMES:
             for label, width, height in VIEWPORTS:
                 if label == "mobile" and page not in ("dashboard", "me"):
@@ -317,6 +382,7 @@ def main() -> int:
     os.symlink(STATIC, link)
 
     env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
+    env.filters["human_bytes"] = _human_bytes
     written = render(env)
     write_index(written)
     print(f"rendered {len(written)} files to {os.path.relpath(OUT, REPO)}/")

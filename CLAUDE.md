@@ -10,7 +10,7 @@ easy to get wrong.
 ## Looking at the site
 
 Every page is behind Discord OAuth *and* a live bot API, so you cannot just
-open one. Use the preview harness instead — it renders all 11 pages with
+open one. Use the preview harness instead — it renders all 12 pages with
 fabricated data, no login and no bot required:
 
 ```bash
@@ -24,6 +24,26 @@ checked by deploying, and never ship a visual change without looking at it.
 
 The fixture data is deliberately fictional. Keep it that way — a screenshot of
 this must never be mistakable for real server statistics.
+
+`moderation.html` has a running variant (`moderation_export_running.html`,
+Start button disabled, no Download link) because the export card has two
+states worth eyeballing and only one of them is the template's default
+fixture — `--shots` covers both.
+
+## Message export
+
+The moderation page's export card is `app/static/js/export.js`
+(`initExport(gid)`), not `dashboard.js` — that's Chart.js machinery for the
+overview page and isn't loaded here. It starts a background job on the bot
+(`POST /guild/{id}/data/export`) and polls it (`GET`, every 3s while
+running), then serves the finished CSV at `GET /guild/{id}/export.csv`.
+
+`POST /guild/{id}/data/export` is the app's first `POST` route — everything
+else is a GET, including the "start" naming of that action. It's guarded by a
+`X-Requested-With: fetch` header check instead of a CSRF token: a custom
+header forces a CORS preflight this app never answers, so a bare cross-site
+`<form>` or blind `fetch()` can't attach it. That's on top of the session
+cookie already being `SameSite=Lax` + `Secure`, not instead of it.
 
 ## Design workflow
 

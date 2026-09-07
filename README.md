@@ -13,9 +13,13 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with three tier
   Manage Server, intersected with the servers the bot is actually in. Includes a **Moderation &
   security** page (`/guild/{id}/moderation`) surfacing the spicy `/warnings`, `/security`,
   `/verification`, and `/palantir` endpoints, plus a Moderation-config section (mod-log channel +
-  locked channels, from `/moderation`) and a Features section (per-guild `.feature` cog on/off
-  badges, from `/features`) — so the site now consumes all 19 of the bot API's documented
-  endpoints.
+  locked channels, from `/moderation`), a Features section (per-guild `.feature` cog on/off
+  badges, from `/features`), and a **Message export** card — the only place message content moves
+  through this app. It starts (`POST /guild/{id}/data/export`) and polls
+  (`GET /guild/{id}/data/export`, every 3s while a job is running) a background job on the bot that
+  scans the last 7 days of every readable channel and thread; nothing is stored here, and a
+  finished export downloads (`GET /guild/{id}/export.csv`) for 60 minutes before the bot discards
+  it — so the site now consumes all 22 of the bot API's documented endpoints.
 - **Member self-view** (`/me`) — any logged-in user can read *their own* full harmless profile
   (leveling + economy + activity stats) for any server they share with the bot, no admin rights
   needed. The viewed user id is always the session's own — a member can never read another
