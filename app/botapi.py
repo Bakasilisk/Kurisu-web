@@ -123,8 +123,10 @@ class BotAPIClient:
     async def export_status(self, gid: str) -> dict:
         return await self._get(f"/api/guilds/{gid}/export")
 
-    async def export_start(self, gid: str, requested_by: str) -> tuple[int, dict]:
-        return await self._post(f"/api/guilds/{gid}/export", {"requested_by": requested_by})
+    async def export_start(self, gid: str, requested_by: str, weeks: int | None) -> tuple[int, dict]:
+        return await self._post(
+            f"/api/guilds/{gid}/export", {"requested_by": requested_by, "weeks": weeks}
+        )
 
     async def export_download(self, gid: str) -> tuple[bytes, str | None]:
         """Not streamed (unlike a proxy that might sit in front of a much

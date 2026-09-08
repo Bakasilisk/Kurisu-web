@@ -1306,6 +1306,9 @@ table.heatmap td:hover {
   flex-wrap: wrap;
   align-items: center;
 }
+.export-actions .period-selector {
+  margin-bottom: 0;
+}
 
 .period-selector {
   margin-bottom: var(--space-5);

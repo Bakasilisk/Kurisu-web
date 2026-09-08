@@ -45,6 +45,12 @@ header forces a CORS preflight this app never answers, so a bare cross-site
 `<form>` or blind `fetch()` can't attach it. That's on top of the session
 cookie already being `SameSite=Lax` + `Secure`, not instead of it.
 
+The POST body now also carries an optional `weeks` field (from the dropdown
+next to "Start export"), forwarded to the bot unvalidated — same
+pass-through division of labor as `period`/`limit` elsewhere — the 1–12 bound
+lives solely in the bot, which clamps and echoes the effective value back as
+`weeks` in the job JSON.
+
 ## Design workflow
 
 `design/` is a drop zone, not something the app serves. Full conventions are in

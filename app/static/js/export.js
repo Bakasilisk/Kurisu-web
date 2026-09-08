@@ -29,6 +29,7 @@
     const statusEl = document.getElementById("export-status");
     const actionsEl = section.querySelector(".export-actions");
     const startBtn = document.getElementById("export-start");
+    const sel = document.getElementById("export-weeks");
     let pollTimer = null;
     // Tracks the last state we rendered, so a running->idle transition
     // (mid-poll) can be told apart from a page load that starts idle — the
@@ -81,9 +82,11 @@
         statusEl.appendChild(badge("Idle", "neutral"));
         statusEl.appendChild(para("No export has been run recently."));
       } else if (state === "running") {
+        const weeks = job.weeks || 4;
+        if (sel) sel.value = String(weeks);
         statusEl.appendChild(badge("Running", "neutral"));
         statusEl.appendChild(para(
-          `${job.sources_scanned || 0} sources scanned, ${job.sources_skipped || 0} skipped, ` +
+          `${weeks}-week scan: ${job.sources_scanned || 0} sources scanned, ${job.sources_skipped || 0} skipped, ` +
           `${(job.messages || 0).toLocaleString()} messages so far…`
         ));
       } else if (state === "done") {
@@ -91,7 +94,7 @@
         const mins = minutesUntil(job.expires_at);
         const expiry = mins === null ? "" : mins > 0 ? ` — expires in ${mins} min` : " — expiring now";
         statusEl.appendChild(para(
-          `${(job.messages || 0).toLocaleString()} messages, ${humanBytes(job.bytes)}${expiry}.`
+          `${job.weeks || 4}-week scan: ${(job.messages || 0).toLocaleString()} messages, ${humanBytes(job.bytes)}${expiry}.`
         ));
       } else if (state === "error") {
         statusEl.appendChild(badge("Error", "critical"));
@@ -104,6 +107,7 @@
         statusEl.appendChild(para("The export service is unavailable right now."));
       }
       startBtn.disabled = state === "running" || state === "unavailable";
+      if (sel) sel.disabled = startBtn.disabled;
       setDownloadLink(state === "done");
       previousState = state === "interrupted" ? "idle" : state;
     }
@@ -125,6 +129,7 @@
       btn.addEventListener("click", retry);
       statusEl.appendChild(btn);
       startBtn.disabled = false;
+      if (sel) sel.disabled = false;
     }
 
     function schedulePoll() {
@@ -159,12 +164,13 @@
 
     async function start() {
       startBtn.disabled = true;
+      if (sel) sel.disabled = true;
       let resp;
       try {
         resp = await fetch(`/guild/${gid}/data/export`, {
           method: "POST",
           headers: { "X-Requested-With": "fetch", "Content-Type": "application/json" },
-          body: "{}",
+          body: JSON.stringify({ weeks: sel ? Number(sel.value) : undefined }),
         });
       } catch (e) {
         renderFetchError(start);
@@ -188,7 +194,15 @@
         return;
       }
       if (resp.status === 409) {
-        render(data.job || { state: "running" });
+        // The returned job carries the *running* job's weeks, not the one
+        // just requested — call that out instead of letting the selection
+        // silently appear to revert.
+        const runningJob = data.job || { state: "running" };
+        render(runningJob);
+        const weeks = runningJob.weeks || 4;
+        statusEl.appendChild(para(
+          `An export was already running — ${weeks} week${weeks === 1 ? "" : "s"} — your selection wasn't started.`
+        ));
         schedulePoll();
         return;
       }
@@ -198,6 +212,7 @@
           : "You're not permitted to export this server.";
         renderMessage("critical", msg);
         startBtn.disabled = false;
+        if (sel) sel.disabled = false;
         return;
       }
       if (resp.status === 503) {
@@ -206,6 +221,7 @@
       }
       renderMessage("critical", (data && data.error) || "Couldn't start the export.");
       startBtn.disabled = false;
+      if (sel) sel.disabled = false;
     }
 
     startBtn.addEventListener("click", start);

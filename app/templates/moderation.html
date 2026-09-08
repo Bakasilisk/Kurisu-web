@@ -123,23 +123,25 @@
 <section class="section" id="export" data-gid="{{ guild.id }}">
   <h2>Message export</h2>
   <p class="empty">
-    Exports the last 7 days of messages from every channel and thread the bot can read, as a CSV
-    with columns timestamp, channel, author, content, message ID, and attachment links — it
-    contains message content, so handle the download accordingly. This is the only page that
-    moves message content through this app: it is streamed live from Discord via the bot and
-    never stored here. A finished export stays downloadable for 60 minutes; attachment links in it
-    expire after roughly 24 hours, a Discord limit rather than this app's.
+    Exports messages from every channel and thread the bot can read over a window you pick
+    (1–12 weeks, 4 by default), as a CSV with columns timestamp, channel, author, content,
+    message ID, and attachment links — it contains message content, so handle the download
+    accordingly. This is the only page that moves message content through this app: it is
+    streamed live from Discord via the bot and never stored here. A finished export stays
+    downloadable for 60 minutes; attachment links in it expire after roughly 24 hours, a Discord
+    limit rather than this app's.
   </p>
+  {% set w = export_job.get("weeks") or 4 %}
   <div id="export-status" data-state="{{ export_job.state }}">
     {% if export_job.state == "idle" %}
     <span class="badge badge-neutral">Idle</span>
     <p class="empty">No export has been run recently.</p>
     {% elif export_job.state == "running" %}
     <span class="badge badge-neutral">Running</span>
-    <p class="empty">{{ export_job.sources_scanned }} sources scanned, {{ export_job.sources_skipped }} skipped, {{ "{:,}".format(export_job.messages) }} messages so far…</p>
+    <p class="empty">{{ w }}-week scan: {{ export_job.sources_scanned }} sources scanned, {{ export_job.sources_skipped }} skipped, {{ "{:,}".format(export_job.messages) }} messages so far…</p>
     {% elif export_job.state == "done" %}
     <span class="badge badge-good">Done</span>
-    <p class="empty">{{ "{:,}".format(export_job.messages) }} messages, {{ export_job.bytes | human_bytes }} — finished {{ export_job.finished_at[:16] | replace('T', ' ') }}.</p>
+    <p class="empty">{{ w }}-week scan: {{ "{:,}".format(export_job.messages) }} messages, {{ export_job.bytes | human_bytes }} — finished {{ export_job.finished_at[:16] | replace('T', ' ') }}.</p>
     {% elif export_job.state == "error" %}
     <span class="badge badge-critical">Error</span>
     <p class="empty">{{ export_job.error }}</p>
@@ -149,6 +151,15 @@
     {% endif %}
   </div>
   <div class="export-actions">
+    <label class="period-selector">Range:
+      <select id="export-weeks" {% if export_job.state in ("running", "unavailable") %}disabled{% endif %}>
+        <option value="1"  {% if w == 1  %}selected{% endif %}>1 week</option>
+        <option value="2"  {% if w == 2  %}selected{% endif %}>2 weeks</option>
+        <option value="4"  {% if w == 4  %}selected{% endif %}>4 weeks</option>
+        <option value="8"  {% if w == 8  %}selected{% endif %}>8 weeks</option>
+        <option value="12" {% if w == 12 %}selected{% endif %}>12 weeks</option>
+      </select>
+    </label>
     <button type="button" class="button" id="export-start"
       {% if export_job.state in ("running", "unavailable") %}disabled{% endif %}>Start export</button>
     {% if export_job.state == "done" %}
@@ -158,6 +169,6 @@
 </section>
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/export.js?v=1"></script>
+<script src="/static/js/export.js?v=2"></script>
 <script>initExport("{{ guild.id }}");</script>
 {% endblock %}

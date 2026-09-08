@@ -539,11 +539,19 @@ async def data_export_start(request: Request, gid: str):
     if request.headers.get("x-requested-with") != "fetch":
         raise HTTPException(status_code=400, detail="bad request")
     # Self-scoping, same rule as everywhere else in this file: the requester
-    # id is always the signed session's own, never taken from the body.
+    # id is always the signed session's own, never taken from the body. The
+    # only client-supplied value in the body is `weeks` — read best-effort
+    # and forwarded unvalidated, same division of labor as period/limit on
+    # the GET /data/ routes; the bot clamps it to 1-12.
     uid = request.session["user"]["id"]
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    weeks = body.get("weeks") if isinstance(body, dict) else None
     bot_api = request.app.state.bot_api
     try:
-        status, payload = await bot_api.export_start(gid, uid)
+        status, payload = await bot_api.export_start(gid, uid, weeks)
     except BotAPIError as e:
         if str(e) == "unavailable":
             return JSONResponse({"state": "unavailable"}, status_code=503)

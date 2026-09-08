@@ -210,6 +210,7 @@ def pages() -> dict[str, dict]:
                 expires_at="2026-07-20T15:09:32+00:00",
                 sources_scanned=42, sources_skipped=3, messages=8_812,
                 bytes=1_842_004, filename="export-123-20260720T1409Z.csv", error=None,
+                weeks=4,
             ),
         ),
         # Running variant of the same page — Start button disabled, no
@@ -238,6 +239,7 @@ def pages() -> dict[str, dict]:
                 started_at="2026-07-20T14:02:11+00:00", finished_at=None,
                 expires_at=None, sources_scanned=18, sources_skipped=1,
                 messages=3_402, bytes=None, filename=None, error=None,
+                weeks=12,
             ),
         )),
     }
@@ -270,7 +272,7 @@ FETCH_STUB = """
       state: "running", guild_id: "123", requested_by: "1", origin: "web",
       started_at: "2026-07-20T14:02:11+00:00", finished_at: null, expires_at: null,
       sources_scanned: 18, sources_skipped: 1, messages: 3402, bytes: null,
-      filename: null, error: null
+      filename: null, error: null, weeks: 12
     }
   };
   window.fetch = (url) => {

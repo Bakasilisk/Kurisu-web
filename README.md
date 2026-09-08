@@ -17,9 +17,11 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with three tier
   badges, from `/features`), and a **Message export** card — the only place message content moves
   through this app. It starts (`POST /guild/{id}/data/export`) and polls
   (`GET /guild/{id}/data/export`, every 3s while a job is running) a background job on the bot that
-  scans the last 7 days of every readable channel and thread; nothing is stored here, and a
-  finished export downloads (`GET /guild/{id}/export.csv`) for 60 minutes before the bot discards
-  it — so the site now consumes all 22 of the bot API's documented endpoints.
+  scans every readable channel and thread over a window the user picks from a dropdown (1, 2, 4, 8,
+  or 12 weeks, default 4 — the bot clamps the effective value to 1–12 and echoes it back in the job
+  JSON); nothing is stored here, and a finished export downloads (`GET /guild/{id}/export.csv`) for
+  60 minutes before the bot discards it — so the site now consumes all 22 of the bot API's
+  documented endpoints.
 - **Member self-view** (`/me`) — any logged-in user can read *their own* full harmless profile
   (leveling + economy + activity stats) for any server they share with the bot, no admin rights
   needed. The viewed user id is always the session's own — a member can never read another
