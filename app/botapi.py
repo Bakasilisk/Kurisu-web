@@ -66,6 +66,9 @@ class BotAPIClient:
     async def meta(self) -> dict:
         return await self._get("/api/meta")
 
+    async def health(self) -> dict:
+        return await self._get("/api/health")
+
     async def guilds(self) -> list[dict]:
         return await self._get("/api/guilds")
 
@@ -87,8 +90,14 @@ class BotAPIClient:
     async def growth(self, gid: str, period: str = "month") -> dict:
         return await self._get(f"/api/guilds/{gid}/growth", {"period": period})
 
+    async def channel_detail(self, gid: str, cid: str, period: str = "month", limit: int | None = None) -> dict:
+        return await self._get(f"/api/guilds/{gid}/channels/{cid}", _params(period=period, limit=limit))
+
     async def member(self, gid: str, uid: str) -> dict:
         return await self._get(f"/api/guilds/{gid}/members/{uid}")
+
+    async def member_series(self, gid: str, uid: str, period: str = "year") -> dict:
+        return await self._get(f"/api/guilds/{gid}/members/{uid}/series", _params(period=period))
 
     async def quietest(self, gid: str, limit: int | None = None) -> dict:
         return await self._get(f"/api/guilds/{gid}/quietest", _params(limit=limit))

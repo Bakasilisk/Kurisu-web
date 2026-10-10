@@ -10,7 +10,7 @@ easy to get wrong.
 ## Looking at the site
 
 Every page is behind Discord OAuth *and* a live bot API, so you cannot just
-open one. Use the preview harness instead — it renders all 12 pages with
+open one. Use the preview harness instead — it renders all 15 pages with
 fabricated data, no login and no bot required:
 
 ```bash
@@ -28,13 +28,27 @@ this must never be mistakable for real server statistics.
 `moderation.html` has a running variant (`moderation_export_running.html`,
 Start button disabled, no Download link) because the export card has two
 states worth eyeballing and only one of them is the template's default
-fixture — `--shots` covers both.
+fixture — `--shots` covers both. `health.html` likewise has
+`health_degraded.html` (a failed cog with its error, no recorded start time,
+no heartbeat), since the null branches are what you'd see right after a
+deploy.
+
+The `-mobile` shots are not a true 390px render: headless Chrome won't make
+a window narrower than 500px, runs the page's JS at that width, and then
+crops. Chart.js sizes its canvases during that window, so every chart box
+looks like it overflows the right edge — on the dashboard as much as anywhere
+else. That's the harness, not the CSS. To check a chart page at real phone
+width, load it in a `<iframe width=390>` on a wider window instead.
 
 ## Message export
 
 The moderation page's export card is `app/static/js/export.js`
-(`initExport(gid)`), not `dashboard.js` — that's Chart.js machinery for the
-overview page and isn't loaded here. It starts a background job on the bot
+(`initExport(gid)`), not `dashboard.js` — that's the Chart.js machinery for
+the chart pages (overview, channel drilldown, and the activity-over-time
+chart on the member and self-view profiles) and isn't loaded here. (Each of
+those chart pages has exactly one `runBoxes` runner: one period select drives
+one list of boxes, because `currentBoxes` is what the `themechange` re-render
+walks.) The export card starts a background job on the bot
 (`POST /guild/{id}/data/export`) and polls it (`GET`, every 3s while
 running), then serves the finished CSV at `GET /guild/{id}/export.csv`.
 

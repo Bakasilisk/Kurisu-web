@@ -1122,6 +1122,47 @@ table.heatmap td:hover {
   margin-bottom: 0;
 }
 
+/* A chart box that carries its own period select (the member profile's
+   activity-over-time chart): same eyebrow h2, select pinned right. */
+.chart-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.chart-box-header h2 {
+  margin: 0;
+}
+.chart-box-header .period-selector {
+  margin-bottom: 0;
+}
+/* Standalone chart boxes outside a .charts grid (member.html, me.html)
+   need the grid's gap as their own spacing. */
+.profile-series {
+  margin-bottom: var(--space-5);
+}
+/* Full-row box in the .charts grid — the channel page's time series, which
+   needs the width more than the two bar charts under it do. */
+.chart-box-wide {
+  grid-column: 1 / -1;
+}
+/* Linked channel names under the dashboard's "Busiest channels" bars. A
+   wrapped inline run rather than ten stacked rows, so the box stays close
+   to its neighbour's height in the 2x2 grid. */
+.stat-list.chart-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-3);
+  font-size: .85rem;
+}
+.stat-list.chart-links li {
+  padding: 0;
+  border-bottom: none;
+}
+
 /* Bounded canvas height so the four chart boxes align in the 2-col grid
    regardless of each dataset's natural aspect ratio — paired with
    maintainAspectRatio: false in dashboard.js. Also the positioning context
@@ -1403,6 +1444,26 @@ table.heatmap td:hover {
 .empty {
   color: var(--text-muted);
   font-size: .9rem;
+}
+/* "← Overview" above a drilldown page's h1 (channel.html). */
+.back-link {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
+  font-size: .85rem;
+  font-weight: 550;
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--accent);
+}
+/* A failed cog's exception text on the bot health page: monospace, wraps
+   anywhere so a long dotted module path can't widen the table. */
+.cog-error {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .8rem;
+  color: var(--critical-text);
+  overflow-wrap: anywhere;
 }
 /* In-content links: member names in tables (moderation warnings) and in the
    quietest ranked list. Without this they fall back to the browser's default

@@ -5,8 +5,8 @@ server-rendered Jinja2 templates + Chart.js (vendored locally, no CDN). Talks to
 `cogs/webapi.py` read-only HTTP API over localhost + an `X-API-Key` header — it never touches
 `stats.db` directly and never holds a Discord bot token.
 
-Access control: Discord OAuth2 login (`identify guilds` scopes), with three tiers over the bot API's
-`harmless`/`spicy`/`self` classification (see `../Kurisu/API.md`):
+Access control: Discord OAuth2 login (`identify guilds` scopes), with four tiers over the bot API's
+`harmless`/`spicy`/`self`/`owner` classification (see `../Kurisu/API.md`):
 
 - **Admin dashboard** (`/guild/{id}…`) — the full stats/mod views. The bot owner sees every server
   the bot is in; anyone else sees only servers where they're the owner, an Administrator, or have
@@ -20,8 +20,14 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with three tier
   scans every readable channel and thread over a window the user picks from a dropdown (1, 2, 4, 8,
   or 12 weeks, default 4 — the bot clamps the effective value to 1–12 and echoes it back in the job
   JSON); nothing is stored here, and a finished export downloads (`GET /guild/{id}/export.csv`) for
-  60 minutes before the bot discards it — so the site now consumes all 22 of the bot API's
-  documented endpoints.
+  60 minutes before the bot discards it. The dashboard's "busiest channels" chart links each
+  channel to a **channel drilldown** (`/guild/{id}/channel/{cid}`, from the harmless
+  `/channels/{cid}`): message, word and poster totals, share of the server and a trend for the
+  last 30 days, plus messages over time, top posters and a weekday split for a selectable
+  period (no hour heatmap — the bot's hourly buckets carry no channel). A member's profile adds
+  an **activity-over-time** chart (messages and voice hours, daily or weekly buckets, from
+  `/members/{uid}/series`), and their top channels link into the channel drilldown. So the
+  site now consumes all 25 of the bot API's documented endpoints.
 - **Member self-view** (`/me`) — any logged-in user can read *their own* full harmless profile
   (leveling + economy + activity stats) for any server they share with the bot, no admin rights
   needed. The viewed user id is always the session's own — a member can never read another
@@ -37,7 +43,17 @@ Access control: Discord OAuth2 login (`identify guilds` scopes), with three tier
   `/leveling` (XP) and `/economy` (bits) rankings, with the viewer's own row highlighted, avatars
   and 🥇🥈🥉 medals on the top three, and a "your standing" banner showing the viewer's rank even
   when they fall outside the displayed top 50. Economy views (leaderboard and self-view) also show
-  each member's payday streak. Same member gate; no admin rights needed.
+  each member's payday streak. Same member gate; no admin rights needed. The self-view carries
+  the same activity-over-time chart, through `/me/{id}/data/series`, which takes the user id
+  from the session like everything else here; its top channels stay plain text unless the
+  viewer also has admin access to that server.
+- **Bot health** (`/bot`) — bot owner only, linked from the top bar for them alone: uptime,
+  gateway latency, server and member counts, Python and discord.py versions, every cog's load
+  state (loaded / failed with its error / disabled / not loaded) and the bot's data files by
+  size and modification time, never their contents. Backed by the bot API's bot-wide `owner`
+  tier (`/api/health`), which, like `self`, is enforced here: no session redirects to login,
+  any other signed-in user gets a 403. Not at `/health`, which proxies and monitors take to be
+  an unauthenticated liveness URL.
 
 No anonymous/no-login tier: every data view still requires a Discord login.
 

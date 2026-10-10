@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_profile.html" import leveling_panel, economy_panel, activity_stats, top_channels %}
+{% from "_profile.html" import leveling_panel, economy_panel, activity_stats, activity_series, top_channels %}
 {% block title %}{{ profile.user.name }} — {{ guild.name }}{% endblock %}
 {% block content %}
 <h1>{{ profile.user.name }}</h1>
@@ -12,6 +12,13 @@
 
 <h2>Activity</h2>
 {{ activity_stats(profile) }}
-{{ top_channels(profile.top_channels) }}
+{{ activity_series() }}
+{{ top_channels(profile.top_channels, guild.id, can_admin) }}
 {% endblock %}
-{% block scripts %}<script src="/static/js/dashboard.js"></script><script>formatVoiceSeconds();</script>{% endblock %}
+{% block scripts %}
+<script src="/static/js/dashboard.js?v=1"></script>
+<script>
+formatVoiceSeconds();
+initProfileSeries("/guild/{{ guild.id }}/data/member/{{ profile.user.id }}/series");
+</script>
+{% endblock %}

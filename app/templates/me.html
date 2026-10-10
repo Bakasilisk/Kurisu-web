@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_profile.html" import leveling_panel, economy_panel, activity_stats, top_channels %}
+{% from "_profile.html" import leveling_panel, economy_panel, activity_stats, activity_series, top_channels %}
 {% block title %}{% if guild %}My stats — {{ guild.name }}{% else %}My stats{% endif %}{% endblock %}
 {% block content %}
 {% if profile %}
@@ -13,7 +13,8 @@
 
 <h2>Activity</h2>
 {{ activity_stats(profile) }}
-{{ top_channels(profile.top_channels) }}
+{{ activity_series() }}
+{{ top_channels(profile.top_channels, guild.id, can_admin) }}
 
 {% if reminders is defined and reminders is not none %}
 <h2>Your reminders</h2>
@@ -59,4 +60,11 @@
 {% endif %}
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/js/dashboard.js"></script><script>formatVoiceSeconds();</script>{% endblock %}
+{% block scripts %}
+<script src="/static/js/dashboard.js?v=1"></script>
+<script>
+formatVoiceSeconds();
+{# No uid in this URL on purpose: the route reads it from the session. #}
+{% if profile %}initProfileSeries("/me/{{ guild.id }}/data/series");{% endif %}
+</script>
+{% endblock %}

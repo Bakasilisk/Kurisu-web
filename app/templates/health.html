@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Bot health — Kurisu Stats{% endblock %}
+{% block content %}
+<h1>Bot health</h1>
+
+{% set ns = namespace(loaded=0, failed=0, off=0) %}
+{% for cog in health.cogs %}
+  {% if cog.state == "loaded" %}{% set ns.loaded = ns.loaded + 1 %}
+  {% elif cog.state == "failed" %}{% set ns.failed = ns.failed + 1 %}
+  {% else %}{% set ns.off = ns.off + 1 %}{% endif %}
+{% endfor %}
+
+<section class="cards">
+  <div class="card card-hero">
+    <span class="label">Uptime</span>
+    <span class="value">{{ health.uptime_seconds | human_duration }}</span>
+    <span class="caption">{% if health.started_at %}since {{ health.started_at[:16] | replace('T', ' ') }} UTC{% else %}Not recorded — needs a full bot restart{% endif %}</span>
+  </div>
+  <div class="card card-hero">
+    <span class="label">Gateway latency</span>
+    <span class="value">{{ ("%.0f ms"|format(health.latency_ms)) if health.latency_ms is not none else "—" }}</span>
+    <span class="caption">{{ "Last heartbeat round trip" if health.latency_ms is not none else "No heartbeat yet, or disconnected" }}</span>
+  </div>
+  <div class="card card-hero">
+    <span class="label">Cogs loaded</span>
+    <span class="value">{{ ns.loaded }}/{{ health.cogs | length }}</span>
+    {% if ns.failed %}<span class="trend-delta trend-down">{{ ns.failed }} failed to load</span>{% endif %}
+    <span class="caption">{{ ns.off }} disabled or not loaded</span>
+  </div>
+</section>
+
+<section class="cards">
+  <div class="card card-sm"><span class="label">Servers</span><span class="value">{{ "{:,}".format(health.guild_count) }}</span></div>
+  <div class="card card-sm"><span class="label">Members</span><span class="value">{{ "{:,}".format(health.member_count) }}</span></div>
+  <div class="card card-sm"><span class="label">Python</span><span class="value">{{ health.versions.python }}</span></div>
+  <div class="card card-sm"><span class="label">discord.py</span><span class="value">{{ health.versions.discordpy }}</span></div>
+</section>
+
+<section class="section">
+  <h2>Cogs</h2>
+  <div class="table-scroll">
+  <table class="stat-table">
+    <tr><th>Cog</th><th>State</th><th>Detail</th></tr>
+    {% for cog in health.cogs %}
+    <tr>
+      <td>{{ cog.name }}</td>
+      <td><span class="badge {{ 'badge-good' if cog.state == 'loaded' else ('badge-critical' if cog.state == 'failed' else 'badge-neutral') }}">{{ cog.state }}</span></td>
+      <td>{% if cog.error %}<span class="cog-error">{{ cog.error }}</span>{% elif cog.state == "disabled" %}<span class="empty">globally disabled</span>{% elif cog.state == "unloaded" %}<span class="empty">not loaded</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Data files</h2>
+  {% if health.data_files %}
+  <div class="table-scroll">
+  <table class="stat-table">
+    <tr><th>File</th><th>Size</th><th>Modified</th></tr>
+    {% for f in health.data_files %}
+    <tr>
+      <td>{{ f.name }}</td>
+      <td>{{ f.bytes | human_bytes | replace(" ", "\u00a0") }}</td>
+      <td>{{ f.modified[:16] | replace('T', ' ') }} UTC</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}
+  <p class="empty">No data files found.</p>
+  {% endif %}
+</section>
+{% endblock %}

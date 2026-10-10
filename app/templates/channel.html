@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}#{{ detail.channel.name }} — {{ guild.name }}{% endblock %}
+{% block content %}
+<a class="back-link" href="/guild/{{ guild.id }}">← Overview</a>
+<h1>#{{ detail.channel.name }}</h1>
+
+{# Tiles are the server-rendered 30-day window (the route's default period);
+   like the dashboard, the select below scopes the charts only. #}
+<section class="cards">
+  <div class="card card-hero">
+    <span class="label">Messages (30d)</span>
+    <span class="value">{{ "{:,}".format(detail.totals.messages) }}</span>
+    {% if detail.trend and detail.trend.pct is not none %}
+    <span class="trend-delta {{ 'trend-up' if detail.trend.pct >= 0 else 'trend-down' }}">{{ "%+.1f%%"|format(detail.trend.pct) }}</span>
+    {% endif %}
+    {% if detail.trend %}
+    <span class="caption">{{ "{:,}".format(detail.trend.recent) }} recent vs {{ "{:,}".format(detail.trend.prior) }} prior 30d</span>
+    {% endif %}
+  </div>
+  <div class="card card-hero">
+    <span class="label">Share of server (30d)</span>
+    <span class="value">{{ "%.1f"|format(detail.share * 100) }}%</span>
+  </div>
+  <div class="card card-hero">
+    <span class="label">Posters (30d)</span>
+    <span class="value">{{ "{:,}".format(detail.totals.posters) }}</span>
+  </div>
+</section>
+
+<section class="cards">
+  <div class="card card-sm"><span class="label">Words</span><span class="value">{{ "{:,}".format(detail.totals.words) }}</span></div>
+  <div class="card card-sm"><span class="label">Characters</span><span class="value">{{ "{:,}".format(detail.totals.chars) }}</span></div>
+  <div class="card card-sm"><span class="label">Words/message</span><span class="value">{{ "%.1f"|format(detail.totals.words / detail.totals.messages) if detail.totals.messages else "—" }}</span></div>
+</section>
+
+<section class="charts-section">
+  <div class="charts-header">
+    <h2>Charts</h2>
+    <label class="period-selector">Period, charts only:
+      <select id="period-select">
+        <option value="week">Week</option>
+        <option value="month" selected>Month</option>
+        <option value="year">Year</option>
+        <option value="all">All</option>
+      </select>
+    </label>
+  </div>
+  <section class="charts">
+    <div class="chart-box chart-box-wide"><h2>Messages over time</h2><div class="chart-canvas-wrap"><canvas id="chart-channel-series"></canvas></div><p class="caption" id="channel-series-caption"></p></div>
+    <div class="chart-box"><h2>Top posters</h2><div class="chart-canvas-wrap"><canvas id="chart-channel-top"></canvas></div></div>
+    <div class="chart-box"><h2>By weekday (UTC)</h2><div class="chart-canvas-wrap"><canvas id="chart-channel-weekdays"></canvas></div></div>
+  </section>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/dashboard.js?v=1"></script>
+<script>initChannelPage("{{ guild.id }}", "{{ detail.channel.id }}");</script>
+{% endblock %}

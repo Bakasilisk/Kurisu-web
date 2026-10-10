@@ -51,12 +51,34 @@
 </section>
 {% endmacro %}
 
-{% macro top_channels(channels) %}
+{% macro activity_series() %}
+{# Filled by dashboard.js's initProfileSeries(url); the caller's scripts
+   block passes the URL, so the self-view's never carries a user id. #}
+<div class="chart-box profile-series">
+  <div class="chart-box-header">
+    <h2>Activity over time</h2>
+    <label class="period-selector">Period:
+      <select id="profile-series-period">
+        <option value="month">Month</option>
+        <option value="year" selected>Year</option>
+        <option value="all">All</option>
+      </select>
+    </label>
+  </div>
+  <div class="chart-canvas-wrap"><canvas id="chart-profile-series"></canvas></div>
+  <p class="caption" id="profile-series-caption"></p>
+</div>
+{% endmacro %}
+
+{# Channel names link to the channel drilldown only for admins of this
+   guild: me.html is seen by plain members, and /guild/{id}/channel/… is an
+   admin route they'd get a 403 on. #}
+{% macro top_channels(channels, guild_id=none, can_admin=false) %}
 <h2>Top channels</h2>
 {% if channels %}
 <ul class="stat-list">
   {% for c in channels %}
-  <li>#{{ c.channel.name }} — {{ c.count }}</li>
+  <li>{% if can_admin and guild_id and c.channel.id %}<a href="/guild/{{ guild_id }}/channel/{{ c.channel.id }}">#{{ c.channel.name }}</a>{% else %}#{{ c.channel.name }}{% endif %} — {{ c.count }}</li>
   {% endfor %}
 </ul>
 {% else %}

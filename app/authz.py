@@ -65,3 +65,13 @@ def check_member_access(request, gid: str) -> bool:
     if request.session.get("is_owner"):
         return gid in request.session.get("accessible_guild_ids", [])
     return gid in request.session.get("member_guild_ids", [])
+
+
+def is_owner(request) -> bool:
+    """Owner tier (the bot API's bot-wide /api/health): True iff the signed-in
+    user is the bot owner. Reads the is_owner flag set once at login (see
+    login_guild_sets()) — like the self tier, the bot API trusts this app to
+    enforce it, so this is the only gate in front of that endpoint."""
+    if request.session.get("user") is None:
+        return False
+    return bool(request.session.get("is_owner"))

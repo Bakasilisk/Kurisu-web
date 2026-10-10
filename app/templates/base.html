@@ -19,7 +19,7 @@
       } catch (e) { /* storage blocked — fall back to the OS preference */ }
     })();
   </script>
-  <link rel="stylesheet" href="/static/css/style.css?v=7">
+  <link rel="stylesheet" href="/static/css/style.css?v=8">
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -40,6 +40,7 @@
     {% endif %}
     {% if user %}
       <a class="navlink" href="/me">My stats</a>
+      {% if is_owner %}<a class="navlink" href="/bot"{% if nav_active == "bot" %} aria-current="page"{% endif %}>Bot health</a>{% endif %}
       <span class="user">{{ user.username }}</span>
       <a class="logout" href="/logout">Log out</a>
     {% endif %}

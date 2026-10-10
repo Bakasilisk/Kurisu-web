@@ -65,6 +65,25 @@ def _human_bytes(n: int | None) -> str:
     return f"{size:.1f} GB"
 
 
+def _human_duration(seconds: int | float | None) -> str:
+    """Uptime for the bot health page: "3d 4h", "4h 12m", "12m", "45s".
+    Two units at most — the page is a glance, not a stopwatch. None (the bot
+    hasn't been restarted onto a bot.py that records its start time) -> "—"."""
+    if seconds is None:
+        return "—"
+    s = int(seconds)
+    d, s = divmod(s, 86400)
+    h, s = divmod(s, 3600)
+    m, s = divmod(s, 60)
+    if d:
+        return f"{d}d {h}h"
+    if h:
+        return f"{h}h {m}m"
+    if m:
+        return f"{m}m"
+    return f"{s}s"
+
+
 def _level_progress(xp: int, level: int) -> dict:
     start = _total_xp_for_level(level)
     nxt = _total_xp_for_level(level + 1)
@@ -89,6 +108,7 @@ BASE_DIR = os.path.dirname(__file__)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 templates.env.filters["human_bytes"] = _human_bytes
+templates.env.filters["human_duration"] = _human_duration
 
 _ERROR_TEXT = {
     403: ("You don't have access to this server",
@@ -103,9 +123,10 @@ _ERROR_TEXT = {
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    # The six /guild/{gid}/data/* endpoints are fetched by dashboard.js via
-    # Promise.all and must always get JSON back — an HTML error page here
-    # would break every chart for anyone whose access lapsed mid-session.
+    # Every */data/* route (the dashboard's, the channel page's, the member
+    # series, the export poller) is fetched by JS and must always get JSON
+    # back — an HTML error page here would break every chart for anyone
+    # whose access lapsed mid-session.
     if "/data/" in request.url.path:
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
     # exc.detail is internal wording ("forbidden") — fine as an API payload,
@@ -171,14 +192,19 @@ def _page_ctx(request: Request, *, gid: str | None = None, guild: dict | None = 
     so this adds no bot-API round-trip."""
     try:
         user = request.session.get("user")
+        # Only decides whether the topbar shows the "Bot health" link; the
+        # /bot route does its own check via authz.is_owner.
+        is_owner = bool(request.session.get("is_owner"))
     except Exception:
         # Defensive: request.session raises if SessionMiddleware isn't
         # installed on the request's scope for some reason — this mirrors
         # the same guard the exception handler used to have inline, since
         # that handler is now one of this helper's callers.
         user = None
+        is_owner = False
     ctx = {
         "user": user,
+        "is_owner": is_owner,
         "guild": guild,
         "nav_active": nav_active,
         "switcher": switcher,
@@ -334,6 +360,21 @@ async def my_stats_guild(request: Request, gid: str):
     )
 
 
+@app.get("/me/{gid}/data/series")
+async def my_series(request: Request, gid: str, period: str = "year"):
+    """The self-view's activity-over-time chart. Same self-scoping as
+    my_stats_guild: the uid is the signed session's own, never a path or
+    query value — there is deliberately no {uid} in this route."""
+    redirect = _require_member(request, gid)
+    if redirect:
+        return redirect
+    uid = request.session["user"]["id"]
+    try:
+        return JSONResponse(await request.app.state.bot_api.member_series(gid, uid, period))
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+
+
 LEADERBOARD_LIMIT = 50
 
 
@@ -453,6 +494,73 @@ async def member_profile(request: Request, gid: str, uid: str):
             request, gid=gid, guild=guild, nav_active="member", switcher=switcher,
             profile=profile, level_progress=level_progress,
         ),
+    )
+
+
+@app.get("/guild/{gid}/data/member/{uid}/series")
+async def data_member_series(request: Request, gid: str, uid: str, period: str = "year"):
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    try:
+        return JSONResponse(await request.app.state.bot_api.member_series(gid, uid, period))
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+
+
+@app.get("/guild/{gid}/channel/{cid}")
+async def channel_page(request: Request, gid: str, cid: str):
+    """One channel's drilldown. The tiles are server-rendered from the
+    default 30-day window; the three charts below refetch through
+    /data/channel/{cid} when the period select changes."""
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    bot_api = request.app.state.bot_api
+    try:
+        detail = await bot_api.channel_detail(gid, cid)
+    except BotAPIError as e:
+        # Unlike member_profile's blanket 404: here the bot distinguishes
+        # "no such channel" (404) from everything else, so a bot outage
+        # reads as an outage rather than as a missing channel.
+        if str(e) == "not_found":
+            raise HTTPException(status_code=404, detail="channel not found")
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    guild, switcher = await _guild_nav(bot_api, request, gid)
+    return templates.TemplateResponse(
+        request, "channel.html",
+        _page_ctx(request, gid=gid, guild=guild, nav_active="overview", switcher=switcher, detail=detail),
+    )
+
+
+@app.get("/guild/{gid}/data/channel/{cid}")
+async def data_channel(request: Request, gid: str, cid: str, period: str = "month", limit: int | None = None):
+    redirect = _require_access(request, gid)
+    if redirect:
+        return redirect
+    try:
+        return JSONResponse(await request.app.state.bot_api.channel_detail(gid, cid, period, limit))
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+
+
+@app.get("/bot")
+async def bot_health(request: Request):
+    """Bot-wide health (uptime, latency, cog load state, data file sizes).
+    The bot API's owner tier is enforced here, not by the bot: no session ->
+    login, signed in but not the bot owner -> 403. Lives at /bot rather than
+    /health, which proxies and monitors treat as an unauthenticated liveness
+    probe."""
+    if request.session.get("user") is None:
+        return RedirectResponse("/login")
+    if not authz.is_owner(request):
+        raise HTTPException(status_code=403, detail="forbidden")
+    try:
+        health = await request.app.state.bot_api.health()
+    except BotAPIError:
+        raise HTTPException(status_code=502, detail="bot API unavailable")
+    return templates.TemplateResponse(
+        request, "health.html", _page_ctx(request, nav_active="bot", health=health)
     )
 
 

@@ -38,7 +38,7 @@
   </div>
   <section class="charts">
     <div class="chart-box"><h2>Top posters</h2><div class="chart-canvas-wrap"><canvas id="chart-top"></canvas></div></div>
-    <div class="chart-box"><h2>Busiest channels</h2><div class="chart-canvas-wrap"><canvas id="chart-channels"></canvas></div></div>
+    <div class="chart-box"><h2>Busiest channels</h2><div class="chart-canvas-wrap"><canvas id="chart-channels"></canvas></div><ul class="stat-list chart-links" id="channel-links" aria-label="Open a channel"></ul></div>
     <div class="chart-box"><h2>Voice leaderboard</h2><div class="chart-canvas-wrap"><canvas id="chart-voice"></canvas></div></div>
     <div class="chart-box"><h2>Growth</h2><div class="chart-canvas-wrap"><canvas id="chart-growth"></canvas></div><p class="caption" id="growth-caption"></p></div>
   </section>
@@ -61,6 +61,6 @@
 </section>
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/dashboard.js?v=1"></script>
 <script>initDashboard("{{ guild.id }}");</script>
 {% endblock %}

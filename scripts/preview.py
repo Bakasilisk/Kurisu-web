@@ -66,6 +66,23 @@ def _human_bytes(n: int | None) -> str:
     return f"{size:.1f} GB"
 
 
+def _human_duration(seconds: int | float | None) -> str:
+    """Local copy of app/main.py's human_duration filter, same reason."""
+    if seconds is None:
+        return "—"
+    s = int(seconds)
+    d, s = divmod(s, 86400)
+    h, s = divmod(s, 3600)
+    m, s = divmod(s, 60)
+    if d:
+        return f"{d}d {h}h"
+    if h:
+        return f"{h}h {m}m"
+    if m:
+        return f"{m}m"
+    return f"{s}s"
+
+
 class Ctx(dict):
     """dict that also answers attribute access, so templates can use `a.b.c`
     the same way they do with the bot API's parsed JSON."""
@@ -107,9 +124,9 @@ PROFILE = c(
     words_per_msg=12.7, busiest_hour=21, voice_seconds=184_000,
     reactions_given=2044, reactions_received=3120,
     top_channels=[
-        c(channel=c(name="general"), count=18_204),
-        c(channel=c(name="lab-notes"), count=9_112),
-        c(channel=c(name="time-travel-theory"), count=4_003),
+        c(channel=c(id="9000", name="general"), count=18_204),
+        c(channel=c(id="9001", name="lab-notes"), count=9_112),
+        c(channel=c(id="9004", name="time-travel-theory"), count=4_003),
     ],
 )
 
@@ -118,10 +135,43 @@ def shell(**overrides) -> dict:
     """Context every page inherits from base.html / _nav.html."""
     ctx = dict(
         user=VIEWER, guild=GUILD, switcher=SWITCHER,
-        nav_active=None, can_admin=True, can_member=True,
+        nav_active=None, can_admin=True, can_member=True, is_owner=True,
     )
     ctx.update(overrides)
     return ctx
+
+
+COGS = [
+    ("admin", "loaded"), ("aidetect", "loaded"), ("economy", "loaded"),
+    ("leveling", "loaded"), ("moderation", "loaded"), ("music", "unloaded"),
+    ("palantir", "loaded"), ("stats", "loaded"), ("trace", "disabled"),
+    ("webapi", "loaded"),
+]
+DATA_FILES = [
+    c(name="stats.db", bytes=48_234_496, modified="2026-10-10T07:59:00+00:00"),
+    c(name="stats.db-wal", bytes=4_120_032, modified="2026-10-10T08:01:12+00:00"),
+    c(name="economy.json", bytes=18_204, modified="2026-10-10T07:40:51+00:00"),
+    c(name="leveling.json", bytes=96_311, modified="2026-10-10T08:00:03+00:00"),
+    c(name="warnings.json", bytes=2_048, modified="2026-09-28T19:12:44+00:00"),
+]
+
+
+def health(degraded: bool = False) -> Ctx:
+    """/api/health fixture. Degraded: one cog failed to load, no recorded
+    start time (bot not restarted onto the new bot.py), no heartbeat."""
+    cogs = [c(name=n, state=st, error=None) for n, st in COGS]
+    if degraded:
+        cogs[1] = c(name="aidetect", state="failed",
+                    error="ExtensionFailed: Extension 'cogs.aidetect' raised an error: "
+                          "ModuleNotFoundError: No module named 'divergence_meter'")
+    return c(
+        started_at=None if degraded else "2026-10-07T06:12:00+00:00",
+        uptime_seconds=None if degraded else 273_480,
+        latency_ms=None if degraded else 42.1,
+        guild_count=3, member_count=1_500,
+        versions=c(python="3.13.5", discordpy="2.7.1"),
+        cogs=cogs, data_files=DATA_FILES,
+    )
 
 
 def pages() -> dict[str, dict]:
@@ -160,7 +210,9 @@ def pages() -> dict[str, dict]:
             my_economy_rank=3, my_bits=98_320,
         ),
         # Populated self-view: medals, progress bar, reminders table.
-        "me.html": shell(nav_active="me", profile=PROFILE, level_progress=c(
+        # A plain member (can_admin=False): top channels must render as
+        # plain text here, never as links into the admin channel page.
+        "me.html": shell(nav_active="me", can_admin=False, profile=PROFILE, level_progress=c(
             pct=64, into=12_800, span=20_000,
         ), reminders=[
             c(fire_at="2026-08-01T09:30:00", guild=GUILD,
@@ -173,6 +225,20 @@ def pages() -> dict[str, dict]:
         )),
         "member.html": shell(profile=PROFILE, level_progress=c(
             pct=64, into=12_800, span=20_000,
+        )),
+        # Tiles are server-rendered from this; the three charts come from
+        # FETCH_STUB's "channel/{id}" route, like the real page.
+        "channel.html": shell(nav_active="overview", detail=c(
+            channel=c(id="9001", name="lab-notes"), period="month", bucket="day",
+            start="2026-09-10",
+            totals=c(messages=12_480, words=158_220, chars=812_004, posters=37),
+            share=0.183, trend=c(recent=12_480, prior=11_140, pct=12.0),
+            series=[], top=[], weekdays=[1_620, 1_910, 1_780, 1_540, 1_690, 2_010, 1_930],
+        )),
+        # Bot-wide page: no guild, so no tab bar.
+        "health.html": shell(guild=None, switcher=None, nav_active="bot", health=health()),
+        "health_degraded.html": ("health.html", shell(
+            guild=None, switcher=None, nav_active="bot", health=health(degraded=True),
         )),
         "quietest.html": shell(nav_active="quietest", data=c(entries=[
             c(user=user(i, name), count=i * 3) for i, name in enumerate(NAMES[:6])
@@ -247,15 +313,41 @@ def pages() -> dict[str, dict]:
 
 # Stubs the data endpoints so the dashboard draws real Chart.js charts and a
 # real heatmap from fake payloads, instead of five "couldn't load" boxes.
-FETCH_STUB = """
+# Raw string: the id-normalising regex in fetch() is full of backslashes.
+FETCH_STUB = r"""
 <script>
 (function () {
   const seq = (n, f) => Array.from({length: n}, (_, i) => f(i));
   const names = __NAMES__;
   const channels = ["general","lab-notes","voice-chat","memes","theory","links","bot-spam","intros"];
+  // Same bucketing rule as the bot API: week/month -> daily, year/all ->
+  // weekly keyed on Mondays; start is null for "all". Every thirteenth
+  // bucket is left out so the client-side gap filling has something to fill.
+  const DAY = 86400000;
+  const now = new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const monday = (ms) => ms - ((new Date(ms).getUTCDay() + 6) % 7) * DAY;
+  const SPAN = {week: 7, month: 30, year: 365, all: 700};
+  function series(period, value) {
+    const bucket = period === "week" || period === "month" ? "day" : "week";
+    let start = today - SPAN[period] * DAY;
+    if (bucket === "week") start = monday(start);
+    const step = bucket === "week" ? 7 : 1;
+    const points = [];
+    for (let ms = start, i = 0; ms <= today; ms += step * DAY, i++) {
+      if (i % 13 === 6) continue;
+      points.push(Object.assign({day: iso(ms)}, value(i, step)));
+    }
+    return {period, bucket, start: period === "all" ? null : iso(start), series: points};
+  }
+  const memberSeries = (p) => series(p, (i, k) => ({
+    messages: k * Math.round(26 + 12 * Math.sin(i / 6) + (i * 13) % 5),
+    voice_seconds: k * Math.round(Math.max(0, 1800 + 1500 * Math.sin(i / 5 + 1)))
+  }));
   const routes = {
-    top: {entries: seq(10, i => ({user: {name: names[i]}, count: 4000 - i * 320}))},
-    channels: {entries: seq(8, i => ({channel: {name: channels[i]}, count: 9000 - i * 900}))},
+    top: {entries: seq(10, i => ({user: {id: String(i + 1), name: names[i]}, count: 4000 - i * 320}))},
+    channels: {entries: seq(8, i => ({channel: {id: String(9000 + i), name: channels[i]}, count: 9000 - i * 900}))},
     voice: {entries: seq(10, i => ({user: {name: names[i]}, seconds: (60 - i * 5) * 3600}))},
     growth: {joins: 240, leaves: 96, net: 144, messages: 48100},
     activity: {
@@ -264,6 +356,21 @@ FETCH_STUB = """
       weekday_labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
       total: 48100, peak_weekday: 5, peak_hour: 21
     },
+    // Channel drilldown (channel.html) and the member activity chart
+    // (member.html: member/{id}/series, me.html: series). Functions of the
+    // period, dated relative to today so the gap-filling runs over a
+    // realistic window.
+    "channel/{id}": (p) => Object.assign(series(p, (i, k) =>
+      ({count: k * Math.round(140 + 70 * Math.sin(i / 3) + (i * 37) % 45)})), {
+      channel: {id: "9001", name: "lab-notes"},
+      totals: {messages: 12480, words: 158220, chars: 812004, posters: 37},
+      share: 0.183,
+      trend: p === "all" ? null : {recent: 12480, prior: 11140, pct: 12.0},
+      top: seq(10, i => ({user: {id: String(i + 1), name: names[i], avatar: null}, count: 2400 - i * 210})),
+      weekdays: [1620, 1910, 1780, 1540, 1690, 2010, 1930]
+    }),
+    "member/{id}/series": (p) => memberSeries(p),
+    series: (p) => memberSeries(p),
     // Only exercised by moderation_export_running.html: export.js polls this
     // on load (data-state="running") so the page shows a live-looking poll
     // instead of a 404 in the console. Kept "running" forever here — it's a
@@ -276,8 +383,16 @@ FETCH_STUB = """
     }
   };
   window.fetch = (url) => {
-    const key = String(url).split("/data/")[1].split("?")[0];
-    return Promise.resolve({ok: true, status: 200, json: () => Promise.resolve(routes[key])});
+    // "/guild/123/data/channel/9001?period=month" -> "channel/{id}", "month"
+    const [path, query] = String(url).split("/data/")[1].split("?");
+    const key = path.replace(/\/\d+(?=\/|$)/g, "/{id}");
+    const period = new URLSearchParams(query || "").get("period") || "month";
+    const route = routes[key];
+    if (route === undefined) {
+      return Promise.resolve({ok: false, status: 404, json: () => Promise.resolve({error: "not found"})});
+    }
+    const body = typeof route === "function" ? route(period) : route;
+    return Promise.resolve({ok: true, status: 200, json: () => Promise.resolve(body)});
   };
 })();
 </script>
@@ -294,9 +409,11 @@ def render(env: Environment) -> list[str]:
     for out_name, spec in pages().items():
         template_name, ctx = spec if isinstance(spec, tuple) else (out_name, spec)
         html = env.get_template(template_name).render(**ctx)
-        # dashboard.html needs its five chart boxes fed; moderation.html (both
-        # variants) needs the "export" route for export.js's polling.
-        if template_name in ("dashboard.html", "moderation.html"):
+        # dashboard.html needs its five chart boxes fed, channel.html its
+        # three, member.html/me.html their activity-over-time chart;
+        # moderation.html (both variants) needs the "export" route for
+        # export.js's polling.
+        if template_name in ("dashboard.html", "moderation.html", "channel.html", "member.html", "me.html"):
             html = html.replace("</head>", stub + "</head>")
 
         base = out_name[:-5]  # strip .html
@@ -351,10 +468,12 @@ def screenshot(chrome: str) -> None:
     # Only the pages worth eyeballing — every template is still rendered.
     # moderation_export_running sits alongside moderation so both states of
     # the export card (done / running) get looked at, not just the default.
-    for page in ["dashboard", "leaderboards", "me", "moderation", "moderation_export_running", "picker", "login"]:
+    # health_degraded likewise: one failed cog, no start time, no heartbeat.
+    for page in ["dashboard", "channel", "leaderboards", "me", "member", "moderation",
+                 "moderation_export_running", "health", "health_degraded", "picker", "login"]:
         for theme in THEMES:
             for label, width, height in VIEWPORTS:
-                if label == "mobile" and page not in ("dashboard", "me"):
+                if label == "mobile" and page not in ("dashboard", "channel", "me", "health"):
                     continue
                 out = os.path.join(SHOTS, f"{page}-{theme}-{label}.png")
                 subprocess.run([
@@ -385,6 +504,7 @@ def main() -> int:
 
     env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
     env.filters["human_bytes"] = _human_bytes
+    env.filters["human_duration"] = _human_duration
     written = render(env)
     write_index(written)
     print(f"rendered {len(written)} files to {os.path.relpath(OUT, REPO)}/")
