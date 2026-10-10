@@ -7,6 +7,10 @@ See `README.md` for setup, routes and the access-control tiers.
 These are the things that aren't obvious from reading the code, and that are
 easy to get wrong.
 
+## Git workflow
+- Never commit or push without showing me the diff first and getting explicit approval. This applies to subagents too: tell implementer agents to stop before committing and report back so I can review.
+- Don't push straight to main unless I've asked for it.
+
 ## Looking at the site
 
 Every page is behind Discord OAuth *and* a live bot API, so you cannot just
