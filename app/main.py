@@ -101,8 +101,22 @@ async def lifespan(app: FastAPI):
     await client.aclose()
 
 
+# Starlette's default is 14 days. Admin guild rights are snapshotted into the
+# session at login (authz.login_guild_sets), so this bounds how long a demoted
+# admin keeps dashboard access — and how long a stolen cookie stays valid,
+# since logout only clears the client's copy.
+#
+# The cap only holds because Starlette re-signs the cookie with a fresh Max-Age
+# whenever the session is modified, and nothing writes to a logged-in session
+# except the login flow (/login, /auth/callback), which clears it first. Any
+# future session write elsewhere would make the cap refreshable again.
+SESSION_MAX_AGE = 60 * 60 * 24
+
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, https_only=True, same_site="lax")
+app.add_middleware(
+    SessionMiddleware, secret_key=SESSION_SECRET, max_age=SESSION_MAX_AGE,
+    https_only=True, same_site="lax",
+)
 
 BASE_DIR = os.path.dirname(__file__)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
@@ -233,6 +247,9 @@ async def index(request: Request):
 @app.get("/login")
 async def login(request: Request):
     state = auth.new_state()
+    # Clear first: writing into an existing session would re-sign it with a
+    # fresh SESSION_MAX_AGE, carrying its stale cached rights along.
+    request.session.clear()
     request.session["oauth_state"] = state
     return RedirectResponse(auth.build_authorize_url(state, _redirect_uri()))
 
@@ -246,6 +263,10 @@ def _login_error(request: Request, message: str, status_code: int = 400) -> Resp
 @app.get("/auth/callback")
 async def auth_callback(request: Request, code: str | None = None, state: str | None = None):
     expected = request.session.pop("oauth_state", None)
+    # Clear before the state check: a failed or bookmarked callback ends with
+    # an empty session (cookie deleted), and success rebuilds every key below
+    # from scratch rather than layering onto stale ones.
+    request.session.clear()
     if not code or not state or state != expected:
         # Usually a stale/lost session cookie (e.g. serving over plain HTTP with
         # https_only cookies, or a bookmarked callback URL) rather than a real error.
@@ -673,15 +694,23 @@ async def export_csv(request: Request, gid: str):
     redirect = _require_access(request, gid)
     if redirect:
         return redirect
+    # Self-scoping: the downloader id is the signed session's own, never taken
+    # from the path/query — the bot re-checks that user's Manage Server right
+    # live, since the session's cached rights can be up to a day stale.
     uid = request.session["user"]["id"]
     bot_api = request.app.state.bot_api
     try:
-        data, content_disposition = await bot_api.export_download(gid)
+        data, content_disposition = await bot_api.export_download(gid, uid)
     except BotAPIError as e:
         if str(e) == "not_found":
             raise HTTPException(
                 status_code=410,
                 detail="No finished export — it may have expired or the bot restarted.",
+            )
+        if str(e) == "forbidden":
+            raise HTTPException(
+                status_code=403,
+                detail="You no longer have permission to download this export.",
             )
         raise HTTPException(status_code=502, detail="bot API unavailable")
     logger.info("export download | guild=%s user=%s", gid, uid)

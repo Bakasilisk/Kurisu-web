@@ -63,6 +63,18 @@ header forces a CORS preflight this app never answers, so a bare cross-site
 `<form>` or blind `fetch()` can't attach it. That's on top of the session
 cookie already being `SameSite=Lax` + `Secure`, not instead of it.
 
+`GET /guild/{id}/export.csv` passes the signed session's user id (never one
+from the URL) to the bot as `requested_by`; the bot re-checks that user's
+Manage Server right **live** and 403s if it's gone, so a demoted admin can't
+download message content on the strength of the login-time rights cached in
+the session. Sessions are capped at 1 day (`SESSION_MAX_AGE`, vs Starlette's
+14-day default) to bound how stale that cached snapshot can get everywhere
+else, and how long a stolen cookie lives (logout only clears the client copy).
+Starlette re-signs the cookie with a fresh `Max-Age` on any session write, so
+`/login` and `/auth/callback` `clear()` the session before writing to it —
+keep it that way, and don't write to a logged-in session anywhere else, or
+the cap becomes refreshable.
+
 The POST body now also carries an optional `weeks` field (from the dropdown
 next to "Start export"), forwarded to the bot unvalidated — same
 pass-through division of labor as `period`/`limit` elsewhere — the 1–12 bound

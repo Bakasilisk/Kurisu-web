@@ -137,14 +137,19 @@ class BotAPIClient:
             f"/api/guilds/{gid}/export", {"requested_by": requested_by, "weeks": weeks}
         )
 
-    async def export_download(self, gid: str) -> tuple[bytes, str | None]:
+    async def export_download(self, gid: str, requested_by: str) -> tuple[bytes, str | None]:
         """Not streamed (unlike a proxy that might sit in front of a much
         bigger upstream): the payload is bot-side capped bytes on the same
         host, so a plain buffered GET is simpler than send(stream=True) +
-        StreamingResponse/BackgroundTask."""
+        StreamingResponse/BackgroundTask.
+
+        `requested_by` is the downloader's user id; the bot re-checks their
+        Manage Server right live and answers 403 if it's gone, which this
+        surfaces as BotAPIError("forbidden")."""
         try:
             resp = await self._client.get(
                 f"{self._base_url}/api/guilds/{gid}/export/download",
+                params={"requested_by": requested_by},
                 headers=self._headers,
                 timeout=httpx.Timeout(10.0, read=120.0),
             )
@@ -154,6 +159,8 @@ class BotAPIClient:
             raise BotAPIError("not_found")
         if resp.status_code == 401:
             raise BotAPIError("unauthorized")
+        if resp.status_code == 403:
+            raise BotAPIError("forbidden")
         if resp.status_code == 503:
             raise BotAPIError("unavailable")
         try:
